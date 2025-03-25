@@ -29,7 +29,13 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        ResetY();
         Movement();
+    }
+
+    void ResetY()
+    {
+        playerTx.position = new Vector3(1, -0.53f, playerTx.position.z);
     }
 
     void Movement()
