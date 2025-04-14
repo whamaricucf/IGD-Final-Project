@@ -18,10 +18,18 @@ public class SaveManager : MonoBehaviour
     {
         if (File.Exists(SavePath))
         {
-            string json = File.ReadAllText(SavePath);
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
-            Debug.Log("Game Loaded.");
-            return data;
+            try
+            {
+                string json = File.ReadAllText(SavePath);
+                SaveData data = JsonUtility.FromJson<SaveData>(json);
+                Debug.Log("Game Loaded.");
+                return data;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"Failed to load save data. Creating new data. Error: {ex.Message}");
+                return new SaveData();
+            }
         }
         else
         {
@@ -29,6 +37,7 @@ public class SaveManager : MonoBehaviour
             return new SaveData();
         }
     }
+
 
     public static void DeleteSave()
     {

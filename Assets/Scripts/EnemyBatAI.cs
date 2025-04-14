@@ -17,6 +17,8 @@ public class EnemyBatAI : MonoBehaviour
     private bool bombingRunActive = false;
     private Vector3 bombingTarget;
 
+    public static event System.Action OnEnemyDied; // <-- New event for when bat dies
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -169,6 +171,9 @@ public class EnemyBatAI : MonoBehaviour
     {
         // Award experience points to player
         PlayerExperience.Instance?.GainExperience(runtimeData.experience);
+
+        // Fire global death event
+        OnEnemyDied?.Invoke(); // <-- Broadcast that an enemy died
 
         Destroy(gameObject);
     }

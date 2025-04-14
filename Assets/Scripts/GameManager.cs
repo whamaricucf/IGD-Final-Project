@@ -22,6 +22,12 @@ public class GameManager : MonoBehaviour
         enemiesDefeated = 0;
         UpdateCoinsUI();
         UpdateEnemiesDefeatedUI();
+
+        // Listen to enemy death events
+        EnemyBatAI.OnEnemyDied += HandleEnemyDeath;
+        EnemyGhostAI.OnEnemyDied += HandleEnemyDeath;
+        EnemySpiderAI.OnEnemyDied += HandleEnemyDeath;
+
     }
 
     public void AddCoins(int amount)
@@ -182,4 +188,11 @@ public class GameManager : MonoBehaviour
         SaveManager.Save(currentSaveData);
         Debug.Log($"Run ended. Earned {coinsEarned} coins. Total coinws now: {currentSaveData.totalCoins}");
     }
+
+    private void HandleEnemyDeath()
+    {
+        AddEnemiesDefeated(1);
+        AddCoins(1);
+    }
+
 }

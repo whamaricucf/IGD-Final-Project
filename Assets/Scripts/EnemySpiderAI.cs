@@ -17,6 +17,8 @@ public class EnemySpiderAI : MonoBehaviour
     public float webDropInterval = 5f;
     private float webDropTimer = 0f;
 
+    public static event System.Action OnEnemyDied; // <-- New event for when spider dies
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -132,6 +134,11 @@ public class EnemySpiderAI : MonoBehaviour
     private void Die()
     {
         PlayerExperience.Instance?.GainExperience(runtimeData.experience);
+
+        // Fire global death event
+        OnEnemyDied?.Invoke(); // <-- Broadcast that an enemy died
+
         Destroy(gameObject);
     }
+
 }

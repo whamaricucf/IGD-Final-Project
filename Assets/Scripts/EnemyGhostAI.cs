@@ -19,6 +19,9 @@ public class EnemyGhostAI : MonoBehaviour
     public int numberOfMiniGhosts = 2;
     public float splitHealthThreshold = 50f; // When to split (health value)
 
+    public static event System.Action OnEnemyDied; // <-- New event for when ghost dies
+
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -186,6 +189,10 @@ public class EnemyGhostAI : MonoBehaviour
         // Award experience points to player
         PlayerExperience.Instance?.GainExperience(runtimeData.experience);
 
+        // Fire global death event
+        OnEnemyDied?.Invoke(); // <-- Broadcast that an enemy died
+
         Destroy(gameObject);
     }
+
 }
