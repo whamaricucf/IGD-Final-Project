@@ -8,12 +8,21 @@ public class KingBibleProjectile : MonoBehaviour
 
     public float rotateSpeed = 100f;
     public float damage = 10f;
+    public float knockback = 5f;
+    public float critChance = 0f;
+    public float critMultiplier = 2f;
 
-    public void Activate(Transform playerTransform, float orbitRadius, float startAngle)
+    public void Activate(Transform playerTransform, float orbitRadius, float startAngle, float dmg, float kb, float critChanceVal, float critMultiVal, float spinSpeed)
     {
         player = playerTransform;
         radius = orbitRadius;
         angle = startAngle;
+
+        damage = dmg;
+        knockback = kb;
+        critChance = critChanceVal;
+        critMultiplier = critMultiVal;
+        rotateSpeed = spinSpeed;
     }
 
     void Update()
@@ -30,9 +39,12 @@ public class KingBibleProjectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Enemy"))
+        if (!other.CompareTag("Enemy")) return;
+
+        IDamageable target = other.GetComponent<IDamageable>();
+        if (target != null)
         {
-            other.GetComponent<MonoBehaviour>()?.SendMessage("TakeDamage", (int)damage, SendMessageOptions.DontRequireReceiver);
+            target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMultiplier);
         }
     }
 }

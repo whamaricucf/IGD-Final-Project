@@ -5,22 +5,24 @@ using UnityEngine;
 public class KingBible : MonoBehaviour
 {
     public string projectileTag = "KingBible";
-    public int numberOfBibles = 1;
-    public float radius = 2.5f;
-    public float duration = 5f;
-    public float cooldown = 8f;
+    public WeaponData bibleStats;
 
     private List<GameObject> activeBibles = new List<GameObject>();
     private float cooldownTimer = 0f;
+
+    void Start()
+    {
+        cooldownTimer = 0f;
+    }
 
     void Update()
     {
         cooldownTimer -= Time.deltaTime;
 
-        if (cooldownTimer <= 0f)
+        if (cooldownTimer <= 0f && bibleStats != null)
         {
             SpawnBibles();
-            cooldownTimer = cooldown;
+            cooldownTimer = bibleStats.cd;
         }
     }
 
@@ -28,16 +30,30 @@ public class KingBible : MonoBehaviour
     {
         ClearActiveBibles();
 
-        float angleStep = 360f / numberOfBibles;
+        float angleStep = 360f / bibleStats.amount;
 
-        for (int i = 0; i < numberOfBibles; i++)
+        for (int i = 0; i < bibleStats.amount; i++)
         {
             GameObject bible = ObjectPooler.Instance.SpawnFromPool(projectileTag, transform.position, Quaternion.identity);
-            bible.GetComponent<KingBibleProjectile>().Activate(this.transform, radius, i * angleStep);
+            var bibleScript = bible.GetComponent<KingBibleProjectile>();
+            if (bibleScript != null)
+            {
+                bibleScript.Activate(
+                    this.transform,
+                    bibleStats.area,
+                    i * angleStep,
+                    bibleStats.baseDMG,
+                    bibleStats.knockback,
+                    bibleStats.critChance,
+                    bibleStats.critMulti,
+                    bibleStats.spd
+                );
+            }
+
             activeBibles.Add(bible);
         }
 
-        StartCoroutine(DisableAfterTime(duration));
+        StartCoroutine(DisableAfterTime(bibleStats.duration));
     }
 
     IEnumerator DisableAfterTime(float time)
@@ -52,7 +68,7 @@ public class KingBible : MonoBehaviour
         {
             if (bible != null)
             {
-                FadeEffect fade = bible.GetComponent<FadeEffect>();
+                var fade = bible.GetComponent<FadeEffect>();
                 if (fade != null)
                     fade.FadeOutAndDisable();
                 else

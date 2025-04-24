@@ -32,6 +32,14 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         Initialize();
+
+        // Pull stats from selected character if available
+        PlayerData data = CharacterSelector.Instance != null ? CharacterSelector.Instance.selectedPlayerData : null;
+        if (data != null)
+        {
+            speed = data.movSpd;
+        }
+
         originalSpeed = speed;
     }
 

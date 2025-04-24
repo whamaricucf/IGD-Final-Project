@@ -6,19 +6,29 @@ public class MagicWandProjectile : MonoBehaviour
     private Vector3 direction;
     private float speed;
     private float damage;
+    private int pierce;
+    private float knockback;
+    private float critChance;
+    private float critMultiplier;
 
+    private int hitCount = 0;
     public float lifetime = 3f;
 
     private void OnEnable()
     {
+        hitCount = 0;
         StartCoroutine(DisableAfterTime(lifetime));
     }
 
-    public void Launch(Vector3 dir, float spd, float dmg)
+    public void Launch(Vector3 dir, float spd, float dmg, int pierceCount, float kb, float critChanceVal, float critMultiVal)
     {
         direction = dir.normalized;
         speed = spd;
         damage = dmg;
+        pierce = pierceCount;
+        knockback = kb;
+        critChance = critChanceVal;
+        critMultiplier = critMultiVal;
     }
 
     void Update()
@@ -28,12 +38,17 @@ public class MagicWandProjectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Enemy"))
-        {
-            // Assuming enemies have a standard TakeDamage(int)
-            other.GetComponent<MonoBehaviour>()?.SendMessage("TakeDamage", (int)damage, SendMessageOptions.DontRequireReceiver);
+        if (!other.CompareTag("Enemy")) return;
 
-            // Disable instead of destroy
+        IDamageable target = other.GetComponent<IDamageable>();
+        if (target != null)
+        {
+            target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMultiplier);
+        }
+
+        hitCount++;
+        if (hitCount >= pierce)
+        {
             gameObject.SetActive(false);
         }
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemySpiderAI : MonoBehaviour
+public class EnemySpiderAI : MonoBehaviour, IDamageable
 {
     public Transform player;
     private NavMeshAgent agent;
@@ -117,19 +117,57 @@ public class EnemySpiderAI : MonoBehaviour
     private IEnumerator DisableAgentTemporarily()
     {
         agent.enabled = false;
-        yield return new WaitForSeconds(0.3f); // Pause for 0.3 seconds
+
+        yield return new WaitForSeconds(0.3f); // Wait during knockback
+
+        // Stop any lingering momentum
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+        }
+
         agent.enabled = true;
+
+        // Wait a few frames to ensure the NavMeshAgent is fully re-registered
+        yield return null;
+        yield return null;
+
+        if (agent.isOnNavMesh && player != null && agent.enabled)
+        {
+            agent.SetDestination(player.position);
+        }
     }
 
-    public void TakeDamage(int damage)
+
+
+    public void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
     {
-        runtimeData.health -= damage;
+        // Crit logic
+        float finalDamage = dmg;
+        if (Random.value < critChance)
+        {
+            finalDamage *= critMulti;
+        }
+
+        runtimeData.health -= Mathf.RoundToInt(finalDamage);
+
+        // Knockback
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            Vector3 dir = (transform.position - sourcePos).normalized;
+            dir.y = 0f;
+            rb.AddForce(dir * knockback, ForceMode.Impulse);
+        }
+        StartCoroutine(DisableAgentTemporarily());
 
         if (runtimeData.health <= 0)
         {
             Die();
         }
     }
+
 
     private void Die()
     {
