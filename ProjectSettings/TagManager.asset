@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - Enemy
+  - CoinsText
+  - EnemiesText
+  - Gem
+  - SuperGem
+  - Magnet
   layers:
   - Default
   - TransparentFX

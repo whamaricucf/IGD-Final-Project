@@ -97,7 +97,12 @@ private void Die()
     {
         if (healthBar != null)
         {
-            healthBar.value = (float)currentHealth / maxHealth;
+            float normalizedHealth = (float)currentHealth / maxHealth;
+            healthBar.value = normalizedHealth;
+
+            // Hide health bar if health is full, show otherwise
+            healthBar.gameObject.SetActive(normalizedHealth < 1f);
         }
     }
+
 }

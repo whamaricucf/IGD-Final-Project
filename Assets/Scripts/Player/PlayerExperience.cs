@@ -1,11 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class PlayerExperience : MonoBehaviour
 {
-    public static PlayerExperience Instance { get; private set; }
+    public static PlayerExperience Instance;
+
+    public int currentExp = 0;
+    public int currentLevel = 1;
+    public int expToNextLevel = 10;
+
+    public TextMeshProUGUI expText;
+    public Slider expBar;
 
     private void Awake()
     {
@@ -15,54 +21,40 @@ public class PlayerExperience : MonoBehaviour
             Destroy(gameObject);
     }
 
-    public int currentExp = 0;
-    public int currentLevel = 1;
-    public int expToNextLevel = 100;
-
-    [Header("UI Elements")]
-    public TextMeshProUGUI expText; // Optional display
-    public UnityEngine.UI.Slider expBar; // EXP bar fill
-
     private void Start()
     {
+        CalculateNextLevelXP();
         UpdateUI();
     }
 
     public void GainExperience(int amount)
     {
         currentExp += amount;
-
-        if (currentExp >= expToNextLevel)
+        while (currentExp >= expToNextLevel)
         {
-            LevelUp();
+            currentExp -= expToNextLevel;
+            currentLevel++;
+            CharacterUnlockManager.Instance.CheckForCharacterUnlocks(PlayerPrefs.GetString("SelectedCharacter", "A"), currentLevel);
+            CalculateNextLevelXP();
         }
-
         UpdateUI();
     }
 
-    private void LevelUp()
+    private void CalculateNextLevelXP()
     {
-        currentLevel++;
-        currentExp -= expToNextLevel;
-
-        // Optionally scale the next level EXP requirement
-        expToNextLevel = Mathf.RoundToInt(expToNextLevel * 1.25f);
-
-        Debug.Log("Leveled Up! New Level: " + currentLevel);
-
-        // TODO: Trigger level-up menu, give upgrade options, etc.
+        if (currentLevel < 20)
+            expToNextLevel = 5 + (currentLevel * 5);
+        else if (currentLevel < 40)
+            expToNextLevel = 105 + ((currentLevel - 20) * 8);
+        else
+            expToNextLevel = 265 + ((currentLevel - 40) * 12);
     }
 
     private void UpdateUI()
     {
         if (expText != null)
-        {
             expText.text = $"EXP: {currentExp}/{expToNextLevel} (Lv {currentLevel})";
-        }
-
         if (expBar != null)
-        {
             expBar.value = (float)currentExp / expToNextLevel;
-        }
     }
 }

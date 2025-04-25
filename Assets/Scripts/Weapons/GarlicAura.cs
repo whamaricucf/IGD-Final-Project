@@ -8,14 +8,23 @@ public class GarlicAura : MonoBehaviour
     private Dictionary<GameObject, float> enemyHitTimers = new Dictionary<GameObject, float>();
 
     public WeaponData garlicStats;
+    public Transform garlicVisualTransform; // Assign in inspector or find it via child search
 
     void Start()
     {
         if (garlicStats != null)
         {
+            // Setup collider
             garlicCollider = gameObject.AddComponent<SphereCollider>();
             garlicCollider.isTrigger = true;
             garlicCollider.radius = garlicStats.area;
+
+            // Update the visual size to match area
+            if (garlicVisualTransform != null)
+            {
+                float scale = garlicStats.area * 2f; // diameter = radius * 2
+                garlicVisualTransform.localScale = new Vector3(scale, garlicVisualTransform.localScale.y, scale);
+            }
         }
     }
 

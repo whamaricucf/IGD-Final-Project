@@ -5,12 +5,12 @@ using UnityEngine.SceneManagement;
 public class AdditiveScenes : MonoBehaviour
 {
     private bool isPaused = false;
-    readonly public string pauseSceneName = "PauseMenu"; // set these in the Inspector or hardcode
-    readonly public string upgradeSceneName = "UpgradeMenu";
+    public string pauseSceneName = "PauseMenu";
+    public string upgradeSceneName = "UpgradeMenu";
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape)) // Replace with your input system
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (!isPaused)
             {
@@ -44,7 +44,7 @@ public class AdditiveScenes : MonoBehaviour
         LoadSceneAdditive(upgradeSceneName);
     }
 
-    void LoadSceneAdditive(string sceneName)
+    private void LoadSceneAdditive(string sceneName)
     {
         if (!SceneManager.GetSceneByName(sceneName).isLoaded)
         {
@@ -52,7 +52,7 @@ public class AdditiveScenes : MonoBehaviour
         }
     }
 
-    void UnloadSceneIfLoaded(string sceneName)
+    private void UnloadSceneIfLoaded(string sceneName)
     {
         Scene scene = SceneManager.GetSceneByName(sceneName);
         if (scene.isLoaded)

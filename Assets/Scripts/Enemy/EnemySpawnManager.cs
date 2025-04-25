@@ -7,91 +7,72 @@ public class EnemySpawnManager : MonoBehaviour
     [System.Serializable]
     public class SpawnableEnemy
     {
-        public GameObject enemyPrefab;
-        public string enemyType; // "Bat", "Ghost", "Spider"
+        public string enemyType;           // e.g. "Bat", "Ghost", "Spider"
+        public string poolTag;             // Used by ObjectPooler (e.g. "Bat")
+        public float spawnWeight = 1f;     // Controls relative spawn chance
+        public float minSpawnTime = 0f;    // Time in minutes this enemy starts appearing
     }
 
-    public SpawnableEnemy[] allEnemies;
+    public List<SpawnableEnemy> spawnableEnemies;
     public Transform[] spawnPoints;
 
+    [Header("Spawn Timing")]
+    public AnimationCurve spawnCurve; // X: time (minutes), Y: interval
+    public float maxSpawnTime = 10f;  // Max time considered in the curve
     private float spawnTimer = 0f;
-    public float spawnInterval = 2f; // Start with 2 seconds between spawns
-    public float minSpawnInterval = 0.5f; // Fastest possible spawn rate
-    public float spawnRateDecreaseSpeed = 0.05f; // How much faster spawns get per minute
 
     private void Update()
     {
         spawnTimer += Time.deltaTime;
 
-        if (spawnTimer >= spawnInterval)
+        float minutesElapsed = Time.timeSinceLevelLoad / 60f;
+        float currentInterval = spawnCurve.Evaluate(Mathf.Clamp(minutesElapsed, 0f, maxSpawnTime));
+
+        if (spawnTimer >= currentInterval)
         {
-            SpawnEnemy();
+            SpawnEnemy(minutesElapsed);
             spawnTimer = 0f;
         }
-
-        // Decrease spawnInterval over time
-        spawnInterval -= spawnRateDecreaseSpeed * Time.deltaTime;
-        spawnInterval = Mathf.Max(spawnInterval, minSpawnInterval); // Clamp to min
     }
 
-    private void SpawnEnemy()
+    private void SpawnEnemy(float minutesElapsed)
     {
-        if (spawnPoints.Length == 0) return;
+        if (spawnPoints.Length == 0 || spawnableEnemies.Count == 0) return;
 
-        // Determine allowed enemies based on time
-        SpawnableEnemy[] allowedEnemies = GetAllowedEnemies();
+        // Filter eligible enemies
+        List<SpawnableEnemy> eligible = new List<SpawnableEnemy>();
+        foreach (var spawnable in spawnableEnemies)
+        {
+            if (minutesElapsed >= spawnable.minSpawnTime)
+                eligible.Add(spawnable);
+        }
 
-        if (allowedEnemies.Length == 0) return;
+        if (eligible.Count == 0) return;
 
-        // Pick random enemy
-        int enemyIndex = Random.Range(0, allowedEnemies.Length);
-        GameObject enemyToSpawn = allowedEnemies[enemyIndex].enemyPrefab;
+        // Weighted random selection
+        SpawnableEnemy chosen = GetWeightedRandomEnemy(eligible);
+        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
 
-        // Pick random spawn point
-        int spawnPointIndex = Random.Range(0, spawnPoints.Length);
-        Transform spawnPoint = spawnPoints[spawnPointIndex];
-
-        Instantiate(enemyToSpawn, spawnPoint.position, Quaternion.identity);
+        GameObject enemy = ObjectPooler.Instance.SpawnFromPool(chosen.poolTag, spawnPoint.position, Quaternion.identity);
+        enemy.SetActive(true);
     }
 
-    private SpawnableEnemy[] GetAllowedEnemies()
+    private SpawnableEnemy GetWeightedRandomEnemy(List<SpawnableEnemy> options)
     {
-        float minutes = Time.timeSinceLevelLoad / 60f;
+        float totalWeight = 0f;
+        foreach (var enemy in options)
+            totalWeight += enemy.spawnWeight;
 
-        if (minutes < 1)
-        {
-            // Minute 0–1: Bats only
-            return FilterEnemiesByType("Bat");
-        }
-        else if (minutes < 2)
-        {
-            // Minute 1–2: Bats + Ghosts
-            return FilterEnemiesByTypes("Bat", "Ghost");
-        }
-        else if (minutes < 3)
-        {
-            // Minute 2–3: Bats + Spiders
-            return FilterEnemiesByTypes("Bat", "Spider");
-        }
-        else if (minutes < 4)
-        {
-            // Minute 3–4: Spiders + Ghosts
-            return FilterEnemiesByTypes("Spider", "Ghost");
-        }
-        else
-        {
-            // Minute 4+: All 3
-            return allEnemies;
-        }
-    }
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
 
-    private SpawnableEnemy[] FilterEnemiesByType(string type)
-    {
-        return System.Array.FindAll(allEnemies, enemy => enemy.enemyType == type);
-    }
+        foreach (var enemy in options)
+        {
+            cumulative += enemy.spawnWeight;
+            if (roll <= cumulative)
+                return enemy;
+        }
 
-    private SpawnableEnemy[] FilterEnemiesByTypes(string type1, string type2)
-    {
-        return System.Array.FindAll(allEnemies, enemy => enemy.enemyType == type1 || enemy.enemyType == type2);
+        return options[options.Count - 1]; // Fallback
     }
 }
