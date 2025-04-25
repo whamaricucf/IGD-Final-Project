@@ -53,7 +53,7 @@ public class PlayerExperience : MonoBehaviour
     private void UpdateUI()
     {
         if (expText != null)
-            expText.text = $"EXP: {currentExp}/{expToNextLevel} (Lv {currentLevel})";
+            expText.text = $"LV {currentLevel}";
         if (expBar != null)
             expBar.value = (float)currentExp / expToNextLevel;
     }

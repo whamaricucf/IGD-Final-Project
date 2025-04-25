@@ -14,6 +14,9 @@ public class GemPickup : MonoBehaviour
     private AudioSource audioSource;
     private GemRotator rotator;
 
+    private float moveSpeed = 10f; // Adjust this value to change movement speed
+    private float collectionDistance = 1f; // Larger threshold to collect the gem
+
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
@@ -68,10 +71,7 @@ public class GemPickup : MonoBehaviour
 
             transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 4, 0.5f);
 
-            transform.DOMove(playerTarget.position, tweenDuration)
-                .SetEase(easeType)
-                .OnComplete(CollectGem);
-
+            // Initiate the position update to move towards player
             if (sr != null)
             {
                 sr.DOFade(0f, tweenDuration).SetEase(Ease.InSine);
@@ -81,8 +81,25 @@ public class GemPickup : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Only update position if the gem is being collected
+        if (isBeingCollected && playerTarget != null)
+        {
+            // Move the gem towards the player's position
+            transform.position = Vector3.MoveTowards(transform.position, playerTarget.position, Time.deltaTime * moveSpeed);
+
+            // If the gem is close enough to the player, stop moving and collect it
+            if (Vector3.Distance(transform.position, playerTarget.position) < collectionDistance)
+            {
+                CollectGem();
+            }
+        }
+    }
+
     private void CollectGem()
     {
+        // Gain experience for the player
         PlayerExperience.Instance.GainExperience(expValue);
 
         if (pickupSFX != null)
@@ -90,6 +107,11 @@ public class GemPickup : MonoBehaviour
             audioSource.PlayOneShot(pickupSFX, 0.75f);
         }
 
+        // Return the gem to the pool
         ObjectPooler.Instance.ReturnToPool("Gem", gameObject);
+
+        // Stop further movement by setting isBeingCollected to false
+        isBeingCollected = false;
+        gameObject.SetActive(false); // Ensure the gem is deactivated after collection
     }
 }

@@ -7,6 +7,69 @@ public abstract class BaseEnemyAI : MonoBehaviour
     [Header("Shared Enemy Settings")]
     public EnemyData baseData;
     protected EnemyData runtimeData;
+    protected NavMeshAgent agent;
+    public Transform player;
+
+    private Rigidbody rb;
+
+    protected virtual void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        rb = GetComponent<Rigidbody>();
+
+        if (agent == null)
+        {
+            Debug.LogError($"{name}: Missing NavMeshAgent!");
+        }
+
+        if (player == null)
+        {
+            player = GameObject.FindWithTag("Player")?.transform;
+            Debug.Log($"Player assigned: {player != null}");
+            if (player == null)
+            {
+                Debug.LogError($"{name}: Player reference is not assigned!");
+            }
+        }
+
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+        }
+
+        StartCoroutine(PlaceEnemyOnNavMesh());
+        InitializeRuntimeData();
+        InitializeEnemy();
+    }
+
+    private IEnumerator PlaceEnemyOnNavMesh()
+    {
+        yield return new WaitForEndOfFrame();
+
+        if (agent != null && !agent.isOnNavMesh)
+        {
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                transform.position = hit.position;
+            }
+            else
+            {
+                Debug.LogWarning($"{name}: Failed to find valid NavMesh position for spawn.");
+            }
+        }
+
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+        }
+
+        agent.enabled = true;
+
+        if (player != null)
+        {
+            agent.SetDestination(player.position);
+        }
+    }
 
     protected virtual void InitializeRuntimeData()
     {
@@ -60,14 +123,53 @@ public abstract class BaseEnemyAI : MonoBehaviour
 
         agent.enabled = true;
 
-        yield return null;
+        if (!agent.isOnNavMesh)
+        {
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+            {
+                transform.position = hit.position;
+            }
+            else
+            {
+                Debug.LogWarning($"{name} failed to reposition to NavMesh!");
+            }
+        }
+
         yield return null;
 
         if (agent.isOnNavMesh)
         {
-            Transform player = GameObject.FindWithTag("Player")?.transform;
             if (player != null)
                 agent.SetDestination(player.position);
+        }
+    }
+
+    protected virtual void InitializeEnemy()
+    {
+        if (agent != null)
+        {
+            agent.enabled = false;
+            StartCoroutine(StartAgentAfterDelay(agent, 0.5f));
+        }
+
+        if (player == null)
+        {
+            Debug.LogWarning("BaseEnemyAI: Player reference is not assigned!");
+        }
+    }
+
+    private IEnumerator StartAgentAfterDelay(NavMeshAgent agent, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        agent.enabled = true;
+
+        if (player != null)
+        {
+            agent.SetDestination(player.position);
+        }
+        else
+        {
+            Debug.LogError("BaseEnemyAI: Player is still not assigned after delay.");
         }
     }
 
@@ -91,6 +193,30 @@ public abstract class BaseEnemyAI : MonoBehaviour
             direction.y = 0f;
             rb.velocity = Vector3.zero;
             rb.AddForce(direction * (runtimeData.knockback * 2f), ForceMode.Impulse);
+        }
+    }
+
+    public virtual void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
+    {
+        if (agent == null || player == null)
+        {
+            Debug.LogError($"{name}: Agent or Player is null when taking damage.");
+            return;
+        }
+
+        float finalDamage = dmg;
+        if (UnityEngine.Random.value < critChance)
+            finalDamage *= critMulti;
+
+        runtimeData.health -= Mathf.RoundToInt(finalDamage);
+
+        ApplyKnockback(sourcePos, knockback);
+
+        StartCoroutine(TemporarilyDisableAgent(agent));
+
+        if (runtimeData.health <= 0)
+        {
+            Die();
         }
     }
 }

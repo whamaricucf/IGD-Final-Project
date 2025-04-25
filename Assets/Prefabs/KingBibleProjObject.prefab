@@ -23,7 +23,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2160678872351194516
 Transform:
   m_ObjectHideFlags: 0
@@ -396,6 +396,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotateSpeed: 100
   damage: 10
+  knockback: 5
+  critChance: 0
+  critMultiplier: 2
 --- !u!114 &4152116837104072536
 MonoBehaviour:
   m_ObjectHideFlags: 0

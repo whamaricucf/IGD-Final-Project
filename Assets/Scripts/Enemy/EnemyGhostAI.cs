@@ -4,9 +4,6 @@ using UnityEngine.AI;
 
 public class EnemyGhostAI : BaseEnemyAI, IDamageable
 {
-    public Transform player;
-    private NavMeshAgent agent;
-
     [Header("Ghost Settings")]
     public bool isMiniGhost = false;
     private bool hasSplit = false;
@@ -18,13 +15,10 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
 
     public static event System.Action OnEnemyDied;
 
-    private void Start()
+    protected override void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-        agent.autoBraking = false;
-
-        InitializeRuntimeData(); // from BaseEnemyAI
-        agent.speed = runtimeData.speed;
+        base.Start(); // Call the base class Start() to ensure player is assigned
+        InitializeRuntimeData(); // Initialize runtime data for this specific enemy
     }
 
     private void Update()
@@ -99,21 +93,13 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
         agent.speed = runtimeData.speed;
     }
 
-    public void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
+    public override void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
     {
-        float finalDamage = dmg;
-        if (UnityEngine.Random.value < critChance)
-            finalDamage *= critMulti;
-
-        runtimeData.health -= Mathf.RoundToInt(finalDamage);
-
-        ApplyKnockback(sourcePos, knockback);
-        StartCoroutine(TemporarilyDisableAgent(agent));
+        base.TakeDamage(dmg, knockback, sourcePos, critChance, critMulti);
 
         if (runtimeData.health <= 0)
         {
             OnEnemyDied?.Invoke();
-            Die(); // from BaseEnemyAI
         }
     }
 }

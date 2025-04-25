@@ -21,7 +21,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1236881001877716026
 Transform:
   m_ObjectHideFlags: 0
@@ -171,6 +171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb827fcee0c097f45bad803abf0248b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
   baseData: {fileID: 11400000, guid: a9c6790c1c20a804d937e97f9af83187, type: 2}
-  timeBeforeBombingRun: 60
+  player: {fileID: 0}
+  timeBeforeBombingRun: 10
+  bombingSpeed: 20

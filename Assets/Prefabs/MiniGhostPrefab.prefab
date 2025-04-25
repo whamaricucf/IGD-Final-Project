@@ -21,7 +21,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5731741937350304775
 Transform:
   m_ObjectHideFlags: 0
@@ -144,8 +144,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b597aa5f3a20c294fb16fb2d5438e054, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
   baseData: {fileID: 11400000, guid: 7a7adebe7b762794a8396fc5d46567ca, type: 2}
+  player: {fileID: 0}
+  isMiniGhost: 0
   miniGhostPrefab: {fileID: 0}
   numberOfMiniGhosts: 3
   splitHealthThreshold: 33
