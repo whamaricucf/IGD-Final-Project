@@ -101,6 +101,8 @@ public class GemPickup : MonoBehaviour
     {
         // Gain experience for the player
         PlayerExperience.Instance.GainExperience(expValue);
+        // Update the UI after gaining experience
+        PlayerExperience.Instance.UpdateUI();
 
         if (pickupSFX != null)
         {

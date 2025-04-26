@@ -1,28 +1,69 @@
-using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class AdditiveScenes : MonoBehaviour
 {
     private bool isPaused = false;
-    public string pauseSceneName = "PauseMenu";
-    public string upgradeSceneName = "UpgradeMenu";
+    public GameObject upgradeMenuCanvas;  // Cache the reference to the canvas
 
-    void Update()
+    private bool hasUpgradedOnce = false;
+
+    void Awake()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (upgradeMenuCanvas == null)
         {
-            if (!isPaused)
-            {
-                PauseGame();
-                LoadSceneAdditive(pauseSceneName);
-            }
-            else
-            {
-                ResumeGame();
-            }
+            Debug.LogError("Upgrade Menu Canvas not assigned in the Inspector.");
+        }
+        else
+        {
+            Debug.Log("Disabling UpgradeMenuCanvas at Awake.");
+            upgradeMenuCanvas.SetActive(false); // Forcefully disable it
         }
     }
+
+
+
+
+    public void OpenUpgradeMenu()
+    {
+        PauseGame();
+
+        // Make sure canvas is not already active
+        if (upgradeMenuCanvas != null)
+        {
+            upgradeMenuCanvas.SetActive(true);  // Forcefully activate if needed
+        }
+        else
+        {
+            Debug.LogWarning("Upgrade Menu Canvas not found when opening the upgrade menu.");
+        }
+
+        // Set the upgrade screen as active
+        PlayerExperience.Instance.SetUpgradeScreenActive(true);
+    }
+
+
+    public void SetUpgradeMenuActive(bool isActive)
+    {
+        if (upgradeMenuCanvas != null)
+        {
+            upgradeMenuCanvas.SetActive(isActive);
+        }
+        else
+        {
+            Debug.LogWarning("Upgrade Menu Canvas not found when trying to set active!");
+        }
+    }
+
+    public void CloseUpgradeMenu()
+    {
+        // Deactivate the upgrade screen before resuming
+        SetUpgradeMenuActive(false);
+        PlayerExperience.Instance.SetUpgradeScreenActive(false);
+
+        // Optionally, do any cleanup or checks here to ensure the canvas is disabled properly
+        ResumeGame();
+    }
+
 
     public void PauseGame()
     {
@@ -34,30 +75,5 @@ public class AdditiveScenes : MonoBehaviour
     {
         Time.timeScale = 1f;
         isPaused = false;
-        UnloadSceneIfLoaded(pauseSceneName);
-        UnloadSceneIfLoaded(upgradeSceneName);
-    }
-
-    public void OpenUpgradeMenu()
-    {
-        PauseGame();
-        LoadSceneAdditive(upgradeSceneName);
-    }
-
-    private void LoadSceneAdditive(string sceneName)
-    {
-        if (!SceneManager.GetSceneByName(sceneName).isLoaded)
-        {
-            SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-        }
-    }
-
-    private void UnloadSceneIfLoaded(string sceneName)
-    {
-        Scene scene = SceneManager.GetSceneByName(sceneName);
-        if (scene.isLoaded)
-        {
-            SceneManager.UnloadSceneAsync(sceneName);
-        }
     }
 }

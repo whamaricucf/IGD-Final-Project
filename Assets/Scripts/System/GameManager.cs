@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using DG.Tweening;
@@ -44,11 +45,14 @@ public class GameManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == "Game Scene")
+        if (scene.name == "GameScene")
         {
             // Get stats from selected character
             string selectedCharacterID = PlayerPrefs.GetString("SelectedCharacter", "A");
             PlayerData stats = characterDatabase.GetCharacterData(selectedCharacterID);
+
+            // Initialize PlayerStats with selected character's data
+            PlayerStats.Instance.InitializeStats(stats);
 
             // Assign the player stats to MagnetZone
             GameObject magnetZone = GameObject.FindWithTag("Magnet");
@@ -60,6 +64,9 @@ public class GameManager : MonoBehaviour
             {
                 Debug.LogError("GameManager: MagnetZone not found or not properly assigned.");
             }
+
+            // Apply permanent upgrades (loaded from SaveData or PlayerPrefs)
+            ApplyPermanentUpgrades();
 
             // Grab UI refs
             coinsEarnedText = GameObject.FindWithTag("CoinsText")?.GetComponent<TextMeshProUGUI>();
@@ -81,6 +88,21 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("GameManager: GameTimer not found in the scene.");
             }
         }
+    }
+
+
+    // Apply permanent upgrades to PlayerStats (based on SaveData or PlayerPrefs)
+    private void ApplyPermanentUpgrades()
+    {
+        PlayerStats playerStats = PlayerStats.Instance;
+
+        // Example: Apply damage, speed, etc. from PlayerPrefs or SaveData
+        playerStats.damage += PlayerPrefs.GetFloat("PermanentDamageUpgrade", 0);
+        playerStats.speed += PlayerPrefs.GetFloat("PermanentSpeedUpgrade", 0);
+        playerStats.health += PlayerPrefs.GetFloat("PermanentHealthUpgrade", 0);
+
+        // Apply other permanent upgrades here as necessary (armor, magnet, etc.)
+        Debug.Log("Permanent upgrades applied!");
     }
 
     public void AddCoins(int amount)
@@ -146,13 +168,31 @@ public class GameManager : MonoBehaviour
     public void PauseGame()
     {
         Time.timeScale = 0f; // Pauses the game
-        gameTimer.PauseTimer(); // Pauses the GameTimer
+
+        // Manually pause the timer
+        if (gameTimer != null)
+        {
+            gameTimer.PauseTimer();  // Pause the game timer
+        }
+        else
+        {
+            Debug.LogError("GameTimer is not properly initialized.");
+        }
     }
 
-    // Call this method when the game is resumed
     public void ResumeGame()
     {
         Time.timeScale = 1f; // Resumes the game
-        gameTimer.ResumeTimer(); // Resumes the GameTimer
+
+        // Resume the timer when the game is resumed
+        if (gameTimer != null)
+        {
+            gameTimer.ResumeTimer();  // Resume the game timer
+        }
+        else
+        {
+            Debug.LogError("GameTimer is not properly initialized.");
+        }
     }
+
 }

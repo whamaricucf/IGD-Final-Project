@@ -50,7 +50,15 @@ public class CharacterCardUI : MonoBehaviour
     {
         if (!selectButton.interactable) return;
 
+        // Store the character's ID in PlayerPrefs and load the game
         PlayerPrefs.SetString("SelectedCharacter", characterID);
+
+        // Get the reference to the CharacterSelectionManager and pass the selected character ID
+        CharacterSelectionManager selectionManager = FindObjectOfType<CharacterSelectionManager>();
+        selectionManager.SelectCharacter(characterID);
+
+        // Optionally, load the game scene
         SceneManager.LoadScene("GameScene");
     }
+
 }

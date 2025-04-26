@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3088684222112156560
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8280945484626796601}
+  - component: {fileID: 8952901429065599414}
+  m_Layer: 0
+  m_Name: UpgradeManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8280945484626796601
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3088684222112156560}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8952901429065599414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3088684222112156560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b6c755a89f0e684fb363b944bd07748, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  availableUpgrades:
+  - {fileID: 11400000, guid: 2e3481d946f0d9b4ca07890b089373de, type: 2}
+  - {fileID: 11400000, guid: 2bc5de29aea45874682821a49c6be87c, type: 2}
+  - {fileID: 11400000, guid: 28f3770cd5f9b2742be3064bd9a5367c, type: 2}
+  - {fileID: 11400000, guid: 539b81e238ebb4d4295b619e476c6a5e, type: 2}
+  - {fileID: 11400000, guid: c785f2bec33481946bf9d01bc2b32fa7, type: 2}
+  - {fileID: 11400000, guid: 73335b474595cf44ebdfd051e3506783, type: 2}
+  - {fileID: 11400000, guid: d28027873f84665458fed86a26af8e3e, type: 2}
+  - {fileID: 11400000, guid: 6182c9bda3e888441800d5b110d390f3, type: 2}
+  - {fileID: 11400000, guid: ef2c912eca18e4f409c142a9bb2c4c59, type: 2}
+  - {fileID: 11400000, guid: c0b168c52d766e64bb2efa211be1e376, type: 2}
+  - {fileID: 11400000, guid: 6146d5e698615554a90cd8051ca6d6c9, type: 2}
+  - {fileID: 11400000, guid: e1ee17dfdf0333344a66979f56ffdc88, type: 2}
+  - {fileID: 11400000, guid: 1845f630f124edb4baaa0fa1e251b4f8, type: 2}
+  - {fileID: 11400000, guid: abfd72b9d1c99be47a2df394f1e952fb, type: 2}
+  - {fileID: 11400000, guid: 44dd4eab2eb32c849b4de4162aa016b9, type: 2}
+  - {fileID: 11400000, guid: 1d0de74a3cd9d62499f4077374852b42, type: 2}
+  - {fileID: 11400000, guid: d0400b324d9733842bcad96c58b8a718, type: 2}
+  upgradeButtonPrefab: {fileID: 3921966604264114732, guid: 1107ef6536c176341b470d27ba8021b6,
+    type: 3}
+  upgradeButtonContainer: {fileID: 0}
+  upgradeScreen: {fileID: 0}

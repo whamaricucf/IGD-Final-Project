@@ -1,14 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public CameraShake cameraShake;
-
     public int maxHealth = 100;
-    private int currentHealth;
+    public int currentHealth;
+
+    public float armor;  // Add armor stat
 
     private bool isInvulnerable = false;
     public float invulnerabilityDuration = 0.5f;
@@ -27,17 +27,15 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isInvulnerable) return;
 
-        currentHealth -= amount;
+        // Apply armor reduction to damage
+        float reducedDamage = Mathf.Max(amount - armor, 0);  // Armor cannot reduce damage below 0
+        currentHealth -= Mathf.RoundToInt(reducedDamage);
         currentHealth = Mathf.Max(currentHealth, 0); // Prevent health going below 0
 
-        Debug.Log($"Player took {amount} damage! Current Health: {currentHealth}");
+        Debug.Log($"Player took {reducedDamage} damage! Current Health: {currentHealth}");
 
         UpdateUI();
         FlashHitIndicator();
-        if (cameraShake != null)
-        {
-            cameraShake.Shake(0.15f, 0.1f); // Subtle shake: duration, magnitude
-        }
         StartCoroutine(InvulnerabilityRoutine());
 
         if (currentHealth <= 0)
@@ -87,7 +85,7 @@ public class PlayerHealth : MonoBehaviour
         hitIndicatorImage.color = new Color(1f, 0f, 0f, 0f);
     }
 
-private void Die()
+    private void Die()
     {
         Debug.Log("Player died!");
         // TODO: Handle death (restart, show game over, etc.)
@@ -104,5 +102,4 @@ private void Die()
             healthBar.gameObject.SetActive(normalizedHealth < 1f);
         }
     }
-
 }

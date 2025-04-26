@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerData : ScriptableObject
 {
     [SerializeField]
-    public float movSpd, regen, maxHP, str, area, projSpd, duration, cd, luck, growth;
+    public float movSpd, regen, maxHP, str, area, projSpd, duration, cd, luck, growth, magnet;
     // movSpd = Move Speed (how fast the player moves)
     // regen = Health Recovery (how fast/much the player recovers over x time)
     // maxHP = Max Health (cap of player hp)
@@ -17,7 +17,7 @@ public class PlayerData : ScriptableObject
     // cd = Cooldown (the time between each attack per weapon)
     // luck = Chance of pickups being dropped
     // growth = exp gain multiplier
-    public int armor, magnet, revival, amount;
+    public int armor,  revival, amount;
     // armor = damage reduction
     // magnet = increases pickup range
     // revival = how many times player can die and come back to life

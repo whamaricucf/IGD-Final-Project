@@ -12,6 +12,8 @@ TagManager:
   - Magnet
   - SpawnPoint
   - GameTimer
+  - UpgradeMenuCanvas
+  - GameManager
   layers:
   - Default
   - TransparentFX
