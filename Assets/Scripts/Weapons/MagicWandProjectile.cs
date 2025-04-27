@@ -40,8 +40,7 @@ public class MagicWandProjectile : MonoBehaviour
     {
         if (!other.CompareTag("Enemy")) return;
 
-        IDamageable target = other.GetComponent<IDamageable>();
-        if (target != null)
+        if (other.TryGetComponent(out IDamageable target))
         {
             target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMultiplier);
         }
@@ -49,13 +48,13 @@ public class MagicWandProjectile : MonoBehaviour
         hitCount++;
         if (hitCount >= pierce)
         {
-            gameObject.SetActive(false);
+            ObjectPooler.Instance.ReturnToPool("MagicWandBullet", gameObject);
         }
     }
 
     private IEnumerator DisableAfterTime(float time)
     {
         yield return new WaitForSeconds(time);
-        gameObject.SetActive(false);
+        ObjectPooler.Instance.ReturnToPool("MagicWandBullet", gameObject);
     }
 }

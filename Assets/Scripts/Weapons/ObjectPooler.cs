@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.AI.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(100)] // Ensure ObjectPooler initializes AFTER NavMesh and Tiles
@@ -130,8 +131,16 @@ public class ObjectPooler : MonoBehaviour
             return;
         }
 
+        // SAFELY disable NavMeshAgent if it exists
+        if (obj.TryGetComponent(out NavMeshAgent agent))
+        {
+            if (agent.enabled)
+                agent.enabled = false;
+        }
+
         obj.SetActive(false);
         obj.transform.parent = poolParents[tag];
         poolDictionary[tag].Enqueue(obj);
     }
+
 }

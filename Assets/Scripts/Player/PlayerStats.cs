@@ -1,12 +1,15 @@
 using UnityEngine;
+using System;
 
 public class PlayerStats : MonoBehaviour
 {
-    public static PlayerStats Instance; // Singleton instance
+    public static PlayerStats Instance;
 
-    public PlayerData playerData; // Reference to the selected player's data
+    public event Action OnStatsChanged;
 
-    // Player's stats pulled from PlayerData
+    [Header("Base Stats (from PlayerData)")]
+    public PlayerData playerData;
+
     public float health;
     public float damage;
     public float speed;
@@ -15,14 +18,17 @@ public class PlayerStats : MonoBehaviour
     public float area;
     public float projSpd;
     public float duration;
-    public float cd;
     public float magnet;
     public float growth;
     public int armor;
     public int revival;
     public int amount;
 
-    // Track passive upgrade levels
+    [Header("Cooldown Handling")]
+    public float baseCooldownReduction;
+    public float cd;
+
+    [Header("Upgrade Tracking")]
     public int healthLevel = 0;
     public int damageLevel = 0;
     public int speedLevel = 0;
@@ -38,14 +44,14 @@ public class PlayerStats : MonoBehaviour
     public int growthLevel = 0;
     public int magnetRangeLevel = 0;
 
-    public string startingWeaponTag; // The initial weapon for the character
+    public string startingWeaponTag;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Keep PlayerStats persistent across scenes
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -55,115 +61,113 @@ public class PlayerStats : MonoBehaviour
 
     public void InitializeStats(PlayerData stats)
     {
-        if (stats != null)
+        if (stats == null)
         {
-            health = stats.maxHP;
-            damage = stats.str;
-            speed = stats.movSpd;
-            luck = stats.luck;
-            regen = stats.regen;
-            area = stats.area;
-            projSpd = stats.projSpd;
-            duration = stats.duration;
-            cd = stats.cd;
-            armor = stats.armor;
-            magnet = stats.magnet;
-            revival = stats.revival;
-            amount = stats.amount;
-            startingWeaponTag = stats.startingWeaponTag;
+            Debug.LogError("PlayerStats: PlayerData is null during initialization!");
+            return;
         }
+        playerData = stats;
+
+        health = stats.maxHP;
+        damage = stats.str;
+        speed = stats.movSpd;
+        luck = stats.luck;
+        regen = stats.regen;
+        area = stats.area;
+        projSpd = stats.projSpd;
+        duration = stats.duration;
+        magnet = stats.magnet;
+        growth = stats.growth;
+        armor = stats.armor;
+        revival = stats.revival;
+        amount = stats.amount;
+        startingWeaponTag = stats.startingWeaponTag;
+
+        baseCooldownReduction = stats.cd;
+
+        // If your PlayerData.cd is 1, you need to treat it as "no bonus", not 95% reduction.
+        cd = Mathf.Clamp(1f - baseCooldownReduction, 0f, 0.95f);
+
+
+        OnStatsChanged?.Invoke();
     }
 
-    // Increase functions for passive upgrades
-    public void IncreaseHealth()
+    public enum StatType
     {
-        healthLevel++;
-        Debug.Log($"Health upgraded! New health level: {healthLevel}");
+        Health, Damage, Speed, Luck, Regen, Area, ProjSpd, Duration, Cooldown,
+        Armor, Revival, Amount, Magnet, Growth
     }
 
-    public void IncreaseSpeed()
+    public void ApplyStatUpgrade(StatType statType, float amount, bool isPercentage)
     {
-        speedLevel++;
-        Debug.Log($"Speed upgraded! New speed level: {speedLevel}");
+        switch (statType)
+        {
+            case StatType.Health:
+                health = isPercentage ? health * (1f + amount / 100f) : health + amount;
+                healthLevel++;
+                break;
+            case StatType.Damage:
+                damage = isPercentage ? damage * (1f + amount / 100f) : damage + amount;
+                damageLevel++;
+                break;
+            case StatType.Speed:
+                speed = isPercentage ? speed * (1f + amount / 100f) : speed + amount;
+                speedLevel++;
+                break;
+            case StatType.Luck:
+                luck = isPercentage ? luck * (1f + amount / 100f) : luck + amount;
+                luckLevel++;
+                break;
+            case StatType.Regen:
+                regen = isPercentage ? regen * (1f + amount / 100f) : regen + amount;
+                regenLevel++;
+                break;
+            case StatType.Area:
+                area = isPercentage ? area * (1f + amount / 100f) : area + amount;
+                areaLevel++;
+                break;
+            case StatType.ProjSpd:
+                projSpd = isPercentage ? projSpd * (1f + amount / 100f) : projSpd + amount;
+                projSpdLevel++;
+                break;
+            case StatType.Duration:
+                duration = isPercentage ? duration * (1f + amount / 100f) : duration + amount;
+                durationLevel++;
+                break;
+            case StatType.Cooldown:
+                baseCooldownReduction += isPercentage ? (amount / 100f) : amount;
+                cd = Mathf.Clamp(baseCooldownReduction, 0f, 0.95f);
+                cdLevel++;
+                break;
+            case StatType.Armor:
+                armor += Mathf.RoundToInt(amount);
+                armorLevel++;
+                break;
+            case StatType.Revival:
+                revival += Mathf.RoundToInt(amount);
+                revivalLevel++;
+                break;
+            case StatType.Amount:
+                this.amount += Mathf.RoundToInt(isPercentage ? this.amount * (amount / 100f) : amount);
+                amountLevel++;
+                break;
+            case StatType.Magnet:
+                magnet = isPercentage ? magnet * (1f + amount / 100f) : magnet + amount;
+                magnetRangeLevel++;
+                break;
+            case StatType.Growth:
+                growth = isPercentage ? growth * (1f + amount / 100f) : growth + amount;
+                growthLevel++;
+                break;
+        }
+
+        OnStatsChanged?.Invoke();
     }
 
-    public void IncreaseRegen()
+    public void ResetStats()
     {
-        regenLevel++;
-        Debug.Log($"Regen upgraded! New regen level: {regenLevel}");
-    }
-
-    public void IncreaseDamage()
-    {
-        damageLevel++;
-        Debug.Log($"Damage upgraded! New damage level: {damageLevel}");
-    }
-
-    public void IncreaseArea()
-    {
-        areaLevel++;
-        Debug.Log($"Area upgraded! New area level: {areaLevel}");
-    }
-
-    public void IncreaseProjectileSpeed()
-    {
-        projSpdLevel++;
-        Debug.Log($"Projectile speed upgraded! New projectile speed level: {projSpdLevel}");
-    }
-
-    public void IncreaseDuration()
-    {
-        durationLevel++;
-        Debug.Log($"Duration upgraded! New duration level: {durationLevel}");
-    }
-
-    public void IncreaseCooldown()
-    {
-        cdLevel++;
-        Debug.Log($"Cooldown upgraded! New cooldown level: {cdLevel}");
-    }
-
-    public void IncreaseArmor(int armorIncrease)
-    {
-        armorLevel += armorIncrease;
-        Debug.Log($"Armor upgraded! New armor level: {armorLevel}");
-    }
-
-    public void IncreaseRevival()
-    {
-        revivalLevel++;
-        Debug.Log($"Revival upgraded! New revival level: {revivalLevel}");
-    }
-
-    public void IncreaseAmount()
-    {
-        amountLevel++;
-        Debug.Log($"Amount upgraded! New amount level: {amountLevel}");
-    }
-
-    // Methods for increasing stats dynamically (if needed in gameplay)
-    public void IncreaseLuck(float amount)
-    {
-        luck += amount;
-        luckLevel++;  // Track luck upgrade level
-        Debug.Log("Luck increased! Current luck: " + luck);
-    }
-
-    public void IncreaseMagnet(float amount)
-    {
-        magnet += amount;
-        Debug.Log("Magnet range increased! Current magnet: " + magnet);
-    }
-
-    public void IncreaseRevivals(int amount)
-    {
-        revival += amount;
-        Debug.Log("Revivals increased! Current revivals: " + revival);
-    }
-
-    public void ApplyExperienceMultiplier(float multiplier)
-    {
-        growth += multiplier;
-        Debug.Log("Experience multiplier increased! Current multiplier: " + growth);
+        healthLevel = damageLevel = speedLevel = luckLevel = regenLevel = areaLevel = projSpdLevel = 0;
+        durationLevel = cdLevel = armorLevel = revivalLevel = amountLevel = growthLevel = magnetRangeLevel = 0;
+        OnStatsChanged?.Invoke();
     }
 }

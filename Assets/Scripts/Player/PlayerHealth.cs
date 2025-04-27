@@ -5,21 +5,54 @@ using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public int maxHealth = 100;
-    public int currentHealth;
+    public float maxHealth = 100;
+    public float currentHealth = 100;
 
-    public float armor;  // Add armor stat
+    public float armor;
 
     private bool isInvulnerable = false;
     public float invulnerabilityDuration = 0.5f;
 
     [Header("UI Elements")]
-    public Slider healthBar; // <-- Connect your Health Bar Slider here
+    public Slider healthBar;
     public Image hitIndicatorImage;
 
-    private void Start()
+    void Start()
     {
-        currentHealth = maxHealth;
+        PlayerStats.Instance.OnStatsChanged += RefreshHealthStats;
+    }
+
+    private void OnDestroy()
+    {
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged -= RefreshHealthStats;
+    }
+
+    private void Update()
+    {
+        if (PlayerStats.Instance != null && PlayerStats.Instance.regen > 0 && currentHealth < maxHealth)
+        {
+            currentHealth += PlayerStats.Instance.regen * Time.deltaTime;
+            currentHealth = Mathf.Min(currentHealth, maxHealth);
+            UpdateUI();
+        }
+    }
+
+    public void ForceRefreshStats()
+    {
+        RefreshHealthStats();
+    }
+
+    private void RefreshHealthStats()
+    {
+        if (PlayerStats.Instance == null || PlayerStats.Instance.health <= 0) return;
+
+        maxHealth = PlayerStats.Instance.health;
+        armor = PlayerStats.Instance.armor;
+
+        if (currentHealth <= 0 || currentHealth > maxHealth)
+            currentHealth = maxHealth;
+
         UpdateUI();
     }
 
@@ -27,10 +60,9 @@ public class PlayerHealth : MonoBehaviour
     {
         if (isInvulnerable) return;
 
-        // Apply armor reduction to damage
-        float reducedDamage = Mathf.Max(amount - armor, 0);  // Armor cannot reduce damage below 0
+        float reducedDamage = Mathf.Max(amount - armor, 0);
         currentHealth -= Mathf.RoundToInt(reducedDamage);
-        currentHealth = Mathf.Max(currentHealth, 0); // Prevent health going below 0
+        currentHealth = Mathf.Max(currentHealth, 0);
 
         Debug.Log($"Player took {reducedDamage} damage! Current Health: {currentHealth}");
 
@@ -62,16 +94,13 @@ public class PlayerHealth : MonoBehaviour
 
     private IEnumerator HitFlashRoutine()
     {
-        float flashDuration = 0.2f; // How long the flash stays visible
-        float fadeDuration = 0.3f; // How long it takes to fade out
+        float flashDuration = 0.2f;
+        float fadeDuration = 0.3f;
 
-        // Fade in instantly
-        hitIndicatorImage.color = new Color(1f, 0f, 0f, 0.4f); // Semi-transparent red
+        hitIndicatorImage.color = new Color(1f, 0f, 0f, 0.4f);
 
-        // Wait a short moment
         yield return new WaitForSeconds(flashDuration);
 
-        // Fade out smoothly
         float timer = 0f;
         while (timer < fadeDuration)
         {
@@ -81,24 +110,41 @@ public class PlayerHealth : MonoBehaviour
             yield return null;
         }
 
-        // Make sure it's fully invisible at the end
         hitIndicatorImage.color = new Color(1f, 0f, 0f, 0f);
     }
 
     private void Die()
     {
         Debug.Log("Player died!");
-        // TODO: Handle death (restart, show game over, etc.)
+
+        if (PlayerStats.Instance != null && PlayerStats.Instance.revival > 0)
+        {
+            PlayerStats.Instance.revival--;
+            currentHealth = maxHealth * 0.5f;
+            UpdateUI();
+            Debug.Log("Player revived at 50% health!");
+        }
+        else
+        {
+            Debug.Log("No revivals left. Game over!");
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.LoseGame();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager.Instance was null when trying to lose the game!");
+            }
+        }
     }
 
     private void UpdateUI()
     {
         if (healthBar != null)
         {
-            float normalizedHealth = (float)currentHealth / maxHealth;
+            float normalizedHealth = currentHealth / maxHealth;
             healthBar.value = normalizedHealth;
-
-            // Hide health bar if health is full, show otherwise
             healthBar.gameObject.SetActive(normalizedHealth < 1f);
         }
     }

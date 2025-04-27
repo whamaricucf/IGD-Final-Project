@@ -106,8 +106,27 @@ public abstract class BaseEnemyAI : MonoBehaviour
     protected virtual void Die()
     {
         DropExpGem();
-        Destroy(gameObject);
+
+        if (TryGetComponent<BaseEnemyAI>(out var enemy))
+        {
+            string poolTag = GetEnemyPoolTag();
+            ObjectPooler.Instance.ReturnToPool(poolTag, gameObject);
+        }
+        else
+        {
+            Destroy(gameObject); // fallback (shouldn't happen)
+        }
     }
+
+    protected virtual string GetEnemyPoolTag()
+    {
+        // Default guesses based on type. You can improve this if you want per-enemy customization.
+        if (GetComponent<EnemyGhostAI>() != null) return "Ghost";
+        if (GetComponent<EnemyBatAI>() != null) return "Bat";
+        if (GetComponent<EnemySpiderAI>() != null) return "Spider";
+        return "Enemy"; // fallback
+    }
+
 
     protected IEnumerator TemporarilyDisableAgent(NavMeshAgent agent)
     {
@@ -217,6 +236,50 @@ public abstract class BaseEnemyAI : MonoBehaviour
         if (runtimeData.health <= 0)
         {
             Die();
+        }
+    }
+    public void ForcePlaceOnNavMesh()
+    {
+        if (agent == null) agent = GetComponent<NavMeshAgent>();
+        if (agent == null) return;
+
+        if (!agent.isOnNavMesh)
+        {
+            // Raise the enemy slightly to let it fall naturally
+            transform.position += new Vector3(0, 2f, 0);
+
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+            }
+
+            agent.enabled = false; // Disable agent temporarily until it lands
+            StartCoroutine(EnableAgentAfterLanding());
+        }
+    }
+
+    private IEnumerator EnableAgentAfterLanding()
+    {
+        Rigidbody rb = GetComponent<Rigidbody>();
+
+        // Wait until the Rigidbody basically stops falling
+        while (rb != null && rb.velocity.magnitude > 0.1f)
+        {
+            yield return null;
+        }
+
+        // Snap to ground if needed
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        {
+            transform.position = hit.position;
+        }
+
+        // Re-enable agent
+        agent.enabled = true;
+        if (player != null)
+        {
+            agent.SetDestination(player.position);
         }
     }
 }

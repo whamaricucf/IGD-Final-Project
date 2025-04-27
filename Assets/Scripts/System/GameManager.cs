@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using DG.Tweening;
 using UnityEngine.SceneManagement;
+using System.Linq;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,10 +17,27 @@ public class GameManager : MonoBehaviour
     private int coinsEarned, enemiesDefeated;
     private bool uiInitialized = false;
 
-    private GameTimer gameTimer; // Reference to the GameTimer (set dynamically)
+    private GameTimer gameTimer;
+
+    public static GameManager Instance;
+
+    private float savedTimeScale = 1f;
 
     private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
     private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void Start()
     {
@@ -27,17 +45,19 @@ public class GameManager : MonoBehaviour
         coinsEarned = 0;
         enemiesDefeated = 0;
 
-        // Don't touch UI here — we wait for OnSceneLoaded
         EnemyBatAI.OnEnemyDied += HandleEnemyDeath;
         EnemyGhostAI.OnEnemyDied += HandleEnemyDeath;
         EnemySpiderAI.OnEnemyDied += HandleEnemyDeath;
+
+        if (SceneManager.GetActiveScene().name == "GameMaster")
+        {
+            SceneManager.LoadSceneAsync("MainMenu", LoadSceneMode.Additive);
+        }
     }
 
     private IEnumerator DelayedUIInit()
     {
-        // Wait 1 frame to ensure UI exists
         yield return null;
-
         UpdateCoinsUI();
         UpdateEnemiesDefeatedUI();
         uiInitialized = true;
@@ -47,37 +67,39 @@ public class GameManager : MonoBehaviour
     {
         if (scene.name == "GameScene")
         {
-            // Get stats from selected character
             string selectedCharacterID = PlayerPrefs.GetString("SelectedCharacter", "A");
             PlayerData stats = characterDatabase.GetCharacterData(selectedCharacterID);
 
-            // Initialize PlayerStats with selected character's data
+            // Initialize PlayerStats
             PlayerStats.Instance.InitializeStats(stats);
 
-            // Assign the player stats to MagnetZone
-            GameObject magnetZone = GameObject.FindWithTag("Magnet");
-            if (magnetZone != null && magnetZone.TryGetComponent(out MagnetZone magnet))
+            // Force refresh PlayerHealth
+            PlayerHealth playerHealth = FindObjectOfType<PlayerHealth>();
+            if (playerHealth != null)
             {
-                magnet.Initialize(stats); // Pass stats to MagnetZone
+                playerHealth.ForceRefreshStats();
             }
             else
+            {
+                Debug.LogWarning("GameManager: PlayerHealth not found!");
+            }
+
+            // MagnetZone should already auto-update itself based on PlayerStats
+            GameObject magnetZone = GameObject.FindWithTag("Magnet");
+            if (magnetZone == null)
             {
                 Debug.LogError("GameManager: MagnetZone not found or not properly assigned.");
             }
 
-            // Apply permanent upgrades (loaded from SaveData or PlayerPrefs)
             ApplyPermanentUpgrades();
 
-            // Grab UI refs
             coinsEarnedText = GameObject.FindWithTag("CoinsText")?.GetComponent<TextMeshProUGUI>();
             enemiesDefeatedText = GameObject.FindWithTag("EnemiesText")?.GetComponent<TextMeshProUGUI>();
 
-            // Now safe to update UI
             UpdateCoinsUI();
             UpdateEnemiesDefeatedUI();
             uiInitialized = true;
 
-            // Find the GameTimer object dynamically (from the Game Scene)
             GameObject timerObject = GameObject.FindWithTag("GameTimer");
             if (timerObject != null)
             {
@@ -90,18 +112,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
-    // Apply permanent upgrades to PlayerStats (based on SaveData or PlayerPrefs)
     private void ApplyPermanentUpgrades()
     {
         PlayerStats playerStats = PlayerStats.Instance;
 
-        // Example: Apply damage, speed, etc. from PlayerPrefs or SaveData
         playerStats.damage += PlayerPrefs.GetFloat("PermanentDamageUpgrade", 0);
         playerStats.speed += PlayerPrefs.GetFloat("PermanentSpeedUpgrade", 0);
         playerStats.health += PlayerPrefs.GetFloat("PermanentHealthUpgrade", 0);
 
-        // Apply other permanent upgrades here as necessary (armor, magnet, etc.)
         Debug.Log("Permanent upgrades applied!");
     }
 
@@ -133,29 +151,51 @@ public class GameManager : MonoBehaviour
     {
         if (target == null) return;
 
-        Vector3 originalScale = target.rectTransform.localScale;
-        Vector3 originalPosition = target.rectTransform.localPosition;
-        Color originalColor = target.color;
-
         target.rectTransform.DOKill();
         target.DOKill();
 
+        // Snap back if cursed
+        if (target.rectTransform.localScale.magnitude > 2f)
+            target.rectTransform.localScale = Vector3.one;
+
+        if (target.color.maxColorComponent > 1.5f)
+            target.color = Color.white;
+
+        // Save the correct local values
+        Vector3 trueOriginalScale = target.rectTransform.localScale;
+        Vector3 trueOriginalPosition = target.rectTransform.localPosition;
+        Color trueOriginalColor = target.color;
+
+        // Animate scaling
         target.rectTransform
-            .DOScale(originalScale * scale, duration / 2f)
+            .DOScale(trueOriginalScale * scale, duration / 2f)
             .SetEase(Ease.OutElastic)
             .OnComplete(() =>
             {
-                target.rectTransform.DOScale(originalScale, duration / 2f).SetEase(Ease.InOutElastic).OnComplete(() =>
-                {
-                    if (shake > 0f)
-                        target.rectTransform.DOShakePosition(0.2f, new Vector3(shake, 0f, 0f))
-                        .OnComplete(() => target.rectTransform.localPosition = originalPosition);
-                });
+                target.rectTransform.DOScale(trueOriginalScale, duration / 2f)
+                    .SetEase(Ease.InOutElastic);
             });
 
+        // Animate color flash
         target.DOColor(flashColor, duration / 2f)
             .SetEase(Ease.OutQuad)
-            .OnComplete(() => target.DOColor(originalColor, duration / 2f).SetEase(Ease.InQuad));
+            .OnComplete(() =>
+            {
+                target.DOColor(trueOriginalColor, duration / 2f)
+                    .SetEase(Ease.InQuad);
+            });
+
+        // Animate shake
+        if (shake > 0f)
+        {
+            target.rectTransform
+                .DOShakeAnchorPos(0.2f, new Vector2(shake, 0f)) // 💥 Use DOShakeAnchorPos for UI!!
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() =>
+                {
+                    target.rectTransform.localPosition = trueOriginalPosition; // 🛠 Safely snap after
+                });
+        }
     }
 
     private void HandleEnemyDeath()
@@ -164,35 +204,125 @@ public class GameManager : MonoBehaviour
         AddCoins(1);
     }
 
-    // Call this method when the game is paused
     public void PauseGame()
     {
-        Time.timeScale = 0f; // Pauses the game
-
-        // Manually pause the timer
-        if (gameTimer != null)
-        {
-            gameTimer.PauseTimer();  // Pause the game timer
-        }
-        else
-        {
-            Debug.LogError("GameTimer is not properly initialized.");
-        }
+        savedTimeScale = Time.timeScale; // Save current time scale
+        Time.timeScale = 0f;
+        if (gameTimer != null) gameTimer.PauseTimer();
+        else Debug.LogError("GameTimer is not properly initialized.");
     }
+
 
     public void ResumeGame()
     {
-        Time.timeScale = 1f; // Resumes the game
+        Time.timeScale = savedTimeScale; // Restore saved time scale
+        if (gameTimer != null) gameTimer.ResumeTimer();
+        else Debug.LogError("GameTimer is not properly initialized.");
 
-        // Resume the timer when the game is resumed
-        if (gameTimer != null)
+        UnfreezeAllProjectiles();
+    }
+
+
+    private void UnfreezeAllProjectiles()
+    {
+        var bibleProjectiles = FindObjectsOfType<KingBibleProjectile>();
+        foreach (var bible in bibleProjectiles)
         {
-            gameTimer.ResumeTimer();  // Resume the game timer
+            bible.enabled = true; // Force re-enable Update movement if frozen
         }
-        else
+
+        var wandProjectiles = FindObjectsOfType<MagicWandProjectile>();
+        foreach (var wand in wandProjectiles)
         {
-            Debug.LogError("GameTimer is not properly initialized.");
+            wand.enabled = true; // Force re-enable Update movement if frozen
         }
     }
 
+
+
+    public void LoseGame()
+    {
+        Debug.Log("[GameManager] Player has lost the game!");
+
+        PauseGame();
+
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.ResetStats();
+        else
+            Debug.LogWarning("LoseGame: PlayerStats not found!");
+
+        if (UpgradeManager.Instance != null)
+            UpgradeManager.Instance.ResetAllUpgrades();
+        else
+            Debug.LogWarning("LoseGame: UpgradeManager not found!");
+
+        if (LoseScreen.Instance != null)
+        {
+            LoseScreen.Instance.Show();
+        }
+        else
+        {
+            Debug.LogWarning("LoseScreen.Instance not found! Attempting FindObjectOfType...");
+            LoseScreen screen = FindObjectOfType<LoseScreen>();
+            if (screen != null)
+            {
+                screen.Show();
+            }
+            else
+            {
+                Debug.LogError("LoseScreen object still not found after fallback!");
+            }
+        }
+    }
+
+
+    private bool isDoubleSpeed = false;
+    private bool isTripleSpeed = false;
+
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift)) // or RightShift if you prefer
+        {
+            ToggleDoubleSpeed();
+        }
+        else if (Input.GetKeyDown(KeyCode.LeftControl)) // CTRL for 3x toggle
+        {
+            ToggleTripleSpeed();
+        }
+    }
+
+    private void ToggleDoubleSpeed()
+    {
+        if (isDoubleSpeed)
+        {
+            Time.timeScale = 1f;
+            savedTimeScale = 1f; // Update saved time scale too!
+            isDoubleSpeed = false;
+        }
+        else
+        {
+            Time.timeScale = 2f;
+            savedTimeScale = 2f; // Update saved time scale too!
+            isDoubleSpeed = true;
+            isTripleSpeed = false;
+        }
+    }
+
+    private void ToggleTripleSpeed()
+    {
+        if (isTripleSpeed)
+        {
+            Time.timeScale = 1f;
+            savedTimeScale = 1f; // Update saved time scale too!
+            isTripleSpeed = false;
+        }
+        else
+        {
+            Time.timeScale = 3f;
+            savedTimeScale = 3f; // Update saved time scale too!
+            isTripleSpeed = true;
+            isDoubleSpeed = false;
+        }
+    }
 }

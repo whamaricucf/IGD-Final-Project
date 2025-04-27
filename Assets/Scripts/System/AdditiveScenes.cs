@@ -2,10 +2,10 @@ using UnityEngine;
 
 public class AdditiveScenes : MonoBehaviour
 {
-    private bool isPaused = false;
+    //private bool isPaused = false;
     public GameObject upgradeMenuCanvas;  // Cache the reference to the canvas
 
-    private bool hasUpgradedOnce = false;
+    //private bool hasUpgradedOnce = false;
 
     void Awake()
     {
@@ -68,12 +68,12 @@ public class AdditiveScenes : MonoBehaviour
     public void PauseGame()
     {
         Time.timeScale = 0f;
-        isPaused = true;
+        //isPaused = true;
     }
 
     public void ResumeGame()
     {
         Time.timeScale = 1f;
-        isPaused = false;
+        //isPaused = false;
     }
 }

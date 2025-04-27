@@ -67,16 +67,17 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
 
         for (int i = 0; i < numberOfMiniGhosts; i++)
         {
-            GameObject miniGhost = Instantiate(miniGhostPrefab, transform.position, Quaternion.identity);
-            if (miniGhost.TryGetComponent(out EnemyGhostAI ghostAI))
+            GameObject miniGhost = ObjectPooler.Instance.SpawnFromPool("MiniGhost", transform.position, Quaternion.identity);
+            if (miniGhost != null && miniGhost.TryGetComponent(out EnemyGhostAI ghostAI))
             {
                 ghostAI.InitializeAsMini(runtimeData);
                 ghostAI.player = this.player;
             }
         }
 
-        Destroy(gameObject);
+        ObjectPooler.Instance.ReturnToPool("Ghost", gameObject);
     }
+
 
     public void InitializeAsMini(EnemyData parentData)
     {

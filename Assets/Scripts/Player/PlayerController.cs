@@ -10,8 +10,8 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public float inputMoveX, inputMoveY;
 
     [Header("Move Settings")]
-    public float speed;
-    private float originalSpeed;
+    public float baseSpeed;
+    private float currentSpeed;
     private bool isSlowed = false;
 
     private Vector3 currentVelocity = Vector3.zero;
@@ -27,20 +27,25 @@ public class PlayerController : MonoBehaviour
     private float verticalVelocity;
 
     [Header("Toroidal Wrapping Settings")]
-    public Vector2 worldMin = new Vector2(-100, -100); // Bottom-left
-    public Vector2 worldMax = new Vector2(400, 400);   // Top-right
+    public Vector2 worldMin = new Vector2(-100, -100);
+    public Vector2 worldMax = new Vector2(400, 400);
 
     void Start()
     {
         Initialize();
 
-        PlayerData data = CharacterSelector.Instance != null ? CharacterSelector.Instance.selectedPlayerData : null;
-        if (data != null)
-        {
-            speed = data.movSpd;
-        }
+        if (PlayerStats.Instance != null)
+            baseSpeed = PlayerStats.Instance.playerData.movSpd;
 
-        originalSpeed = speed;
+        currentSpeed = baseSpeed;
+
+        PlayerStats.Instance.OnStatsChanged += UpdateMovementSpeed;
+    }
+
+    private void OnDestroy()
+    {
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged -= UpdateMovementSpeed;
     }
 
     void Initialize()
@@ -52,7 +57,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         HandleMovement();
-        HandleToroidalWrap(); // <-- Wrap after movement
+        HandleToroidalWrap();
     }
 
     void HandleMovement()
@@ -62,7 +67,6 @@ public class PlayerController : MonoBehaviour
 
         Vector3 cameraForward = Camera.main.transform.forward;
         Vector3 cameraRight = Camera.main.transform.right;
-
         cameraForward.y = 0f;
         cameraRight.y = 0f;
         cameraForward.Normalize();
@@ -71,7 +75,7 @@ public class PlayerController : MonoBehaviour
         Vector3 move = (cameraRight * inputMoveX) + (cameraForward * inputMoveY);
         if (move.sqrMagnitude > 1f) move.Normalize();
 
-        currentVelocity = move * speed;
+        currentVelocity = move * currentSpeed;
 
         verticalVelocity = controller.isGrounded ? groundedYVelocity : verticalVelocity + gravity * Time.deltaTime;
 
@@ -100,7 +104,7 @@ public class PlayerController : MonoBehaviour
         if (flatVelocity.sqrMagnitude > 0.1f)
         {
             float tiltAmount = 10f;
-            float tiltForward = Mathf.Lerp(0f, -tiltAmount, flatVelocity.magnitude / speed);
+            float tiltForward = Mathf.Lerp(0f, -tiltAmount, flatVelocity.magnitude / currentSpeed);
             playerVisual.localRotation = Quaternion.Euler(tiltForward, 0f, 0f);
         }
         else
@@ -130,7 +134,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!isSlowed)
         {
-            speed *= slowMultiplier;
+            currentSpeed *= slowMultiplier;
             isSlowed = true;
         }
     }
@@ -139,8 +143,18 @@ public class PlayerController : MonoBehaviour
     {
         if (isSlowed)
         {
-            speed = originalSpeed;
+            currentSpeed = baseSpeed;
             isSlowed = false;
+        }
+    }
+
+    private void UpdateMovementSpeed()
+    {
+        if (PlayerStats.Instance != null)
+        {
+            baseSpeed = PlayerStats.Instance.speed;
+            if (!isSlowed)
+                currentSpeed = baseSpeed;
         }
     }
 }

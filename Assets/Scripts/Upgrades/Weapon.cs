@@ -2,180 +2,94 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
-    // These are the stats that will be set based on the WeaponData asset
-    public float damage;  // Weapon's base damage
-    public float speed;   // Weapon's speed (projectile speed)
-    public float area;    // Weapon's area of effect (e.g., size)
-    public float cooldown;  // Cooldown between shots or attacks
-    public float duration;  // Duration of effect (e.g., for king bible)
-    public float projInterval; // Projectile firing interval
-    public float hitDelay;  // Hit delay (time between attacks)
-    public float knockback;  // Knockback dealt by the weapon/projectiles
-    public float critChance; // Critical hit chance
-    public float critMulti;  // Critical damage multiplier
-    public int maxLvl; // Maximum level for upgrades
-    public int rarity; // Rarity for upgrades
-    public int amount;  // Number of projectiles fired
-    public int pierce;  // Number of enemies the projectile can pierce
-    public int limit;   // Maximum number of projectiles on screen at a time
-    public bool wallBlock; // Whether the projectile can be blocked by walls
+    // Live runtime stats
+    public float damage;
+    public float speed;
+    public float area;
+    public float cooldown;
+    public float duration;
+    public float projInterval;
+    public float hitDelay;
+    public float knockback;
+    public float critChance;
+    public float critMulti;
+    public int maxLvl;
+    public int rarity;
+    public int amount;
+    public int pierce;
+    public int limit;
+    public bool wallBlock;
 
-    // New field for weaponType
-    public string weaponType; // The type of the weapon (KingBible, MagicWand, etc.)
+    public string weaponType;
+    public WeaponData weaponData;
 
-    // Upgrade levels for each upgrade type
-    private int magnetRangeLevel = 0;
-    private int damageLevel = 0;
-    private int areaLevel = 0;
-    private int speedLevel = 0;
-    private int projectilesLevel = 0;
-    private int cooldownLevel = 0;
-    private int healthLevel = 0;
-    private int revivalLevel = 0;
+    // Base stats (copied at start, never changed after)
+    protected float baseDamage;
+    protected float baseSpeed;
+    protected float baseArea;
+    protected float baseCooldown;
+    protected float baseDuration;
+    protected float baseProjInterval;
+    protected float baseHitDelay;
+    protected float baseKnockback;
+    protected float baseCritChance;
+    protected float baseCritMulti;
+    protected int baseAmount;
+    protected int basePierce;
+    protected int baseLimit;
 
-    // Reference to the WeaponData ScriptableObject
-    public WeaponData weaponData;  // This will hold the data for the weapon's base stats
+    protected int weaponAmountBonus = 0; // Used for weapon upgrades like "fires 1 more projectile"
 
-    void Start()
+    protected virtual void Start()
     {
-        // Ensure the weapon data is not null
         if (weaponData != null)
         {
-            // Apply the weapon data to set the stats
+            weaponData = Instantiate(weaponData); // Clone it
             ApplyWeaponData();
-        }
-
-        // Set the weaponType based on the WeaponData ScriptableObject
-        if (weaponData != null)
-        {
-            weaponType = weaponData.wepName;  // Assign the weaponType from the WeaponData ScriptableObject
+            weaponType = weaponData.wepName;
         }
     }
 
-    // Apply the values from WeaponData to the Weapon
-    public void ApplyWeaponData()
+    public virtual void ApplyWeaponData()
     {
-        if (weaponData != null)
-        {
-            // Assign values from the WeaponData ScriptableObject
-            damage = weaponData.baseDMG;
-            speed = weaponData.spd;
-            area = weaponData.area;
-            cooldown = weaponData.cd;
-            duration = weaponData.duration;
-            projInterval = weaponData.projInterval;
-            hitDelay = weaponData.hitDelay;
-            knockback = weaponData.knockback;
-            critChance = weaponData.critChance;
-            critMulti = weaponData.critMulti;
-            maxLvl = weaponData.maxLvl;
-            rarity = weaponData.rarity;
-            amount = weaponData.amount;
-            pierce = weaponData.pierce;
-            limit = weaponData.limit;
-            wallBlock = weaponData.wallBlock;
-        }
-    }
+        if (weaponData == null) return;
 
-    // Method to apply the selected upgrade
-    public void ApplyUpgrade(Upgrade upgrade)
-    {
-        upgrade.ApplyUpgrade(this);  // Apply the specific upgrade effect
-    }
+        baseDamage = weaponData.baseDMG;
+        baseSpeed = weaponData.spd;
+        baseArea = weaponData.area;
+        baseCooldown = weaponData.cd;
+        baseDuration = weaponData.duration;
+        baseProjInterval = weaponData.projInterval;
+        baseHitDelay = weaponData.hitDelay;
+        baseKnockback = weaponData.knockback;
+        baseCritChance = weaponData.critChance;
+        baseCritMulti = weaponData.critMulti;
+        baseAmount = weaponData.amount;
+        basePierce = weaponData.pierce;
+        baseLimit = weaponData.limit;
 
-    // Set upgrade levels when an upgrade is selected
-    public void SetUpgradeLevel(string upgradeType, int level)
-    {
-        switch (upgradeType)
-        {
-            case "MagnetRange":
-                magnetRangeLevel = level;
-                break;
-            case "Damage":
-                damageLevel = level;
-                break;
-            case "Area":
-                areaLevel = level;
-                break;
-            case "Speed":
-                speedLevel = level;
-                break;
-            case "Projectiles":
-                projectilesLevel = level;
-                break;
-            case "Cooldown":
-                cooldownLevel = level;
-                break;
-            case "Health":
-                healthLevel = level;
-                break;
-            case "Revival":
-                revivalLevel = level;
-                break;
-        }
-    }
-
-    // Method to get the current level of a specific upgrade
-    public int GetCurrentUpgradeLevel(string upgradeType)
-    {
-        switch (upgradeType)
-        {
-            case "MagnetRange":
-                return magnetRangeLevel;
-            case "Damage":
-                return damageLevel;
-            case "Area":
-                return areaLevel;
-            case "Speed":
-                return speedLevel;
-            case "Projectiles":
-                return projectilesLevel;
-            case "Cooldown":
-                return cooldownLevel;
-            case "Health":
-                return healthLevel;
-            case "Revival":
-                return revivalLevel;
-            default:
-                return 0;  // Return 0 if the upgrade type is not recognized
-        }
-    }
-
-    // Reset stats when the player dies or when you want to clear upgrades
-    public void ResetWeaponStats()
-    {
-        // Reset values based on WeaponData
-        damage = weaponData.baseDMG;
-        speed = weaponData.spd;
-        area = weaponData.area;
-        cooldown = weaponData.cd;
-        duration = weaponData.duration;
-        projInterval = weaponData.projInterval;
-        hitDelay = weaponData.hitDelay;
-        knockback = weaponData.knockback;
-        critChance = weaponData.critChance;
-        critMulti = weaponData.critMulti;
-        maxLvl = weaponData.maxLvl;
-        rarity = weaponData.rarity;
-        amount = weaponData.amount;
-        pierce = weaponData.pierce;
-        limit = weaponData.limit;
         wallBlock = weaponData.wallBlock;
 
-        // Reset all upgrade levels to 0
-        magnetRangeLevel = 0;
-        damageLevel = 0;
-        areaLevel = 0;
-        speedLevel = 0;
-        projectilesLevel = 0;
-        cooldownLevel = 0;
-        healthLevel = 0;
-        revivalLevel = 0;
+        // Initialize live stats to base stats
+        RefreshWeaponStats();
     }
 
-    // Method to get the weapon's type (e.g., "KingBible", "MagicWand", "GarlicAura")
-    public string GetWeaponType()
+    public virtual void RefreshWeaponStats()
     {
-        return weaponType;  // Return the weapon's name from WeaponData
+        if (PlayerStats.Instance == null)
+            return;
+
+        // Correct scaling based on base stats
+        damage = baseDamage * PlayerStats.Instance.damage;
+        area = baseArea * PlayerStats.Instance.area;
+        cooldown = Mathf.Max(0.05f, baseCooldown * (1f - PlayerStats.Instance.cd));
+        projInterval = Mathf.Max(0.05f, baseProjInterval * (1f - PlayerStats.Instance.cd));
+        speed = baseSpeed * PlayerStats.Instance.projSpd;
+        duration = baseDuration * PlayerStats.Instance.duration;
+        critChance = baseCritChance + (PlayerStats.Instance.luck * 0.01f);
+
+        amount = baseAmount + weaponAmountBonus + PlayerStats.Instance.amount;
+        pierce = basePierce; // (optional — if you want pierce upgrades, add here)
+        limit = baseLimit;   // (optional — if you want limit upgrades, add here)
     }
 }

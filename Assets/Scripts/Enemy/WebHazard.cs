@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WebHazard : MonoBehaviour
@@ -10,35 +9,60 @@ public class WebHazard : MonoBehaviour
 
     private Material webMaterial;
     private Color originalColor;
+    private Coroutine fadeCoroutine;
 
-    private void Start()
+    private void OnEnable()
     {
-        // Grab the material (assumes the web uses 1 material)
-        webMaterial = GetComponentInChildren<Renderer>().material;
-        originalColor = webMaterial.color;
+        if (webMaterial == null)
+        {
+            Renderer renderer = GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                webMaterial = renderer.material;
+                originalColor = webMaterial.color;
+            }
+        }
+
+        // Reset the web appearance in case it's reused from the pool
+        if (webMaterial != null)
+        {
+            webMaterial.color = originalColor;
+        }
 
         // Start the fade-out countdown
         Invoke(nameof(BeginFadeOut), webDuration);
     }
+
+    private void OnDisable()
+    {
+        CancelInvoke();
+        if (fadeCoroutine != null)
+            StopCoroutine(fadeCoroutine);
+    }
+
     private void BeginFadeOut()
     {
-        StartCoroutine(FadeOut());
+        fadeCoroutine = StartCoroutine(FadeOut());
     }
 
     private IEnumerator FadeOut()
     {
         float timer = 0f;
-        Color color = originalColor;
+        Color startColor = originalColor;
 
         while (timer < fadeDuration)
         {
             timer += Time.deltaTime;
-            float alpha = Mathf.Lerp(originalColor.a, 0f, timer / fadeDuration);
-            webMaterial.color = new Color(color.r, color.g, color.b, alpha);
+            float alpha = Mathf.Lerp(startColor.a, 0f, timer / fadeDuration);
+            if (webMaterial != null)
+            {
+                webMaterial.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+            }
             yield return null;
         }
 
-        Destroy(gameObject);
+        // Return to pool instead of destroy
+        ObjectPooler.Instance.ReturnToPool("SpiderWeb", gameObject);
     }
 
     private void OnTriggerEnter(Collider other)

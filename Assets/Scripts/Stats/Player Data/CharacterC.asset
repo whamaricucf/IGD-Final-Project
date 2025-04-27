@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 744c3ccf6032db94783fa2f0d78bb10b, type: 3}
   m_Name: CharacterC
   m_EditorClassIdentifier: 
-  movSpd: 3
+  movSpd: 10
   regen: 0.2
   maxHP: 80
   str: 0.9
@@ -22,8 +22,8 @@ MonoBehaviour:
   cd: 1
   luck: 0
   growth: 1
-  armor: 1
   magnet: 2
+  armor: 1
   revival: 0
   amount: 0
   startingWeaponTag: Garlic

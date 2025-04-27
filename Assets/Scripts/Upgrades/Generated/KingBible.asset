@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519fab4a8cf8f754aa2a491d7890409e, type: 3}
+  m_Name: KingBible
+  m_EditorClassIdentifier: 
+  upgradeName: King Bible
+  icon: {fileID: 0}
+  upgradeDescriptions: []
+  weight: 80
+  maxLevel: 8
+  upgradeLevels:
+  - upgradeTypes: 00000000
+    upgradeAmounts:
+    - 0
+    isPercentageBased: 00
+    description: Orbits around the character.
+  - upgradeTypes: 40000000
+    upgradeAmounts:
+    - 1
+    isPercentageBased: 00
+    description: Fires 1 more projectile.
+  - upgradeTypes: 0200000004000000
+    upgradeAmounts:
+    - 30
+    - 25
+    isPercentageBased: 0101
+    description: Speed +30%, Area +25%.
+  - upgradeTypes: 1000000001000000
+    upgradeAmounts:
+    - 0.5
+    - 10
+    isPercentageBased: 0000
+    description: Duration +0.5s, Damage +10.
+  - upgradeTypes: 40000000
+    upgradeAmounts:
+    - 1
+    isPercentageBased: 00
+    description: Fires 1 more projectile.
+  - upgradeTypes: 0200000004000000
+    upgradeAmounts:
+    - 30
+    - 25
+    isPercentageBased: 0101
+    description: Speed +30%, Area +25%.
+  - upgradeTypes: 1000000001000000
+    upgradeAmounts:
+    - 0.5
+    - 10
+    isPercentageBased: 0000
+    description: Duration +0.5s, Damage +10.
+  - upgradeTypes: 40000000
+    upgradeAmounts:
+    - 1
+    isPercentageBased: 00
+    description: Fires 1 more projectile.
+  compatibleWeaponTags:
+  - KingBible

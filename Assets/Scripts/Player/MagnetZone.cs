@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class MagnetZone : MonoBehaviour
 {
-    public PlayerData playerStats; // Assigned by GameManager
     private SphereCollider magnetCollider;
 
     private void Awake()
@@ -14,42 +13,27 @@ public class MagnetZone : MonoBehaviour
         }
     }
 
-    // This should be called by the GameManager to initialize the magnet stats
-    public void Initialize(PlayerData stats)
+    private void Start()
     {
-        if (stats == null)
-        {
-            Debug.LogError("MagnetZone: PlayerStats is null during initialization!");
-            return;
-        }
+        if (PlayerStats.Instance != null)
+            UpdateMagnetRange();
 
-        playerStats = stats;
-        UpdateMagnetRange();
+        PlayerStats.Instance.OnStatsChanged += UpdateMagnetRange; // Listen to stat changes
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        // Ensure playerStats is valid and then update range
-        if (playerStats != null)
-        {
-            UpdateMagnetRange();
-        }
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged -= UpdateMagnetRange; // Clean up event
     }
 
     public void UpdateMagnetRange()
     {
-        if (playerStats == null)
-        {
-            Debug.LogWarning("MagnetZone: playerStats not yet assigned!");
+        if (PlayerStats.Instance == null || magnetCollider == null)
             return;
-        }
 
-        // Correcting the range multiplication
-        float radius = 1f + (playerStats.magnet * 2f);  // Assuming magnet stat modifies the radius
-        if (magnetCollider != null)
-        {
-            magnetCollider.radius = radius;
-            //Debug.Log($"MagnetZone: Updated radius to {radius} based on player stats.");
-        }
+        float radius = 1f + (PlayerStats.Instance.magnet * 2f);
+        magnetCollider.radius = radius;
+        // Debug.Log($"MagnetZone: Updated radius to {radius}");
     }
 }

@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519fab4a8cf8f754aa2a491d7890409e, type: 3}
+  m_Name: Garlic
+  m_EditorClassIdentifier: 
+  upgradeName: Garlic
+  icon: {fileID: 0}
+  upgradeDescriptions: []
+  weight: 90
+  maxLevel: 8
+  upgradeLevels:
+  - upgradeTypes: 00000000
+    upgradeAmounts:
+    - 0
+    isPercentageBased: 00
+    description: Damages nearby enemies.
+  - upgradeTypes: 0400000001000000
+    upgradeAmounts:
+    - 40
+    - 2
+    isPercentageBased: 0100
+    description: Area +40%, Damage +2.
+  - upgradeTypes: 0800000001000000
+    upgradeAmounts:
+    - 10
+    - 1
+    isPercentageBased: 0100
+    description: Cooldown reduced by 10%, Damage +1.
+  - upgradeTypes: 0400000001000000
+    upgradeAmounts:
+    - 20
+    - 1
+    isPercentageBased: 0100
+    description: Area +20%, Damage +1.
+  - upgradeTypes: 0800000001000000
+    upgradeAmounts:
+    - 10
+    - 2
+    isPercentageBased: 0100
+    description: Cooldown reduced by 10%, Damage +2.
+  - upgradeTypes: 0400000001000000
+    upgradeAmounts:
+    - 20
+    - 1
+    isPercentageBased: 0100
+    description: Area +20%, Damage +1.
+  - upgradeTypes: 0800000001000000
+    upgradeAmounts:
+    - 10
+    - 1
+    isPercentageBased: 0100
+    description: Cooldown reduced by 10%, Damage +1.
+  - upgradeTypes: 0400000001000000
+    upgradeAmounts:
+    - 20
+    - 1
+    isPercentageBased: 0100
+    description: Area +20%, Damage +1.
+  compatibleWeaponTags:
+  - Garlic

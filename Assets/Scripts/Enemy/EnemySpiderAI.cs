@@ -36,9 +36,10 @@ public class EnemySpiderAI : BaseEnemyAI, IDamageable
         {
             Vector3 spawnPos = transform.position;
             spawnPos.y -= 0.5f;
-            Instantiate(webPrefab, spawnPos, Quaternion.identity);
+            ObjectPooler.Instance.SpawnFromPool("SpiderWeb", spawnPos, Quaternion.identity);
         }
     }
+
 
     private void OnTriggerEnter(Collider other)
     {

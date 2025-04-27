@@ -1,86 +1,139 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using static UpgradeTypes;
 
-public class MagicWand : MonoBehaviour
+public class MagicWand : Weapon, IWeaponUpgradeable
 {
-    private float fireTimer;
-    public string projectileTag = "MagicWandBullet";
-    public WeaponData wandStats;
+    private Coroutine attackCoroutine;
+    public Transform firePoint;
 
-    private Transform target;
-
-    private void Start()
+    private void OnEnable()
     {
-        fireTimer = 0f;
+        RefreshWeaponStats();
+        StartAttacking();
     }
 
-    void Update()
+    private void OnDisable()
     {
-        fireTimer -= Time.deltaTime;
+        if (attackCoroutine != null)
+            StopCoroutine(attackCoroutine);
+    }
 
-        if (fireTimer <= 0f && wandStats != null)
+    public void StartAttacking()
+    {
+        if (attackCoroutine != null)
         {
-            FindNearestEnemy();
+            StopCoroutine(attackCoroutine);
+            attackCoroutine = null;
+        }
 
+        attackCoroutine = StartCoroutine(FireProjectiles());
+    }
+
+    private IEnumerator FireProjectiles()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        while (true)
+        {
+            GameObject target = FindClosestEnemy();
             if (target != null)
             {
-                StartCoroutine(FireProjectilesWithInterval(target));
-                fireTimer = wandStats.cd;
+                int totalProjectiles = Mathf.Max(1, amount);
+
+                for (int i = 0; i < totalProjectiles; i++)
+                {
+                    SpawnProjectile();
+
+                    // Only wait projInterval if more projectiles are coming
+                    if (i < totalProjectiles - 1)
+                        yield return new WaitForSeconds(projInterval);
+                }
             }
+
+            yield return new WaitForSeconds(Mathf.Max(0.05f, cooldown));
         }
     }
 
-    void FindNearestEnemy()
+    private void SpawnProjectile()
     {
-        float closestDistance = float.MaxValue;
+        if (firePoint == null) return;
+
+        GameObject proj = ObjectPooler.Instance.SpawnFromPool("MagicWandBullet", firePoint.position, Quaternion.identity);
+
+        if (proj.TryGetComponent(out MagicWandProjectile projectile))
+        {
+            Vector3 shootDir = GetShootDirection();
+            projectile.Launch(shootDir, speed, damage, pierce, knockback, critChance, critMulti);
+        }
+    }
+
+    private Vector3 GetShootDirection()
+    {
+        GameObject target = FindClosestEnemy();
+        if (target != null)
+        {
+            return (target.transform.position - firePoint.position).normalized;
+        }
+        else
+        {
+            return firePoint.forward;
+        }
+    }
+
+    private GameObject FindClosestEnemy()
+    {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        GameObject closest = null;
+        float minDistance = Mathf.Infinity;
+        Vector3 pos = firePoint.position;
 
-        target = null;
-
-        foreach (GameObject enemy in enemies)
+        foreach (var enemy in enemies)
         {
-            float dist = Vector3.Distance(transform.position, enemy.transform.position);
-            if (dist < closestDistance)
+            float dist = Vector3.Distance(enemy.transform.position, pos);
+            if (dist < minDistance)
             {
-                closestDistance = dist;
-                target = enemy.transform;
+                minDistance = dist;
+                closest = enemy;
             }
+        }
+
+        return closest;
+    }
+
+    public void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
+    {
+        switch (type)
+        {
+            case WeaponUpgradeType.Amount:
+                weaponAmountBonus += Mathf.RoundToInt(isPercentage ? weaponAmountBonus * (amount / 100f) : amount);
+                break;
+            case WeaponUpgradeType.Cooldown:
+                baseCooldown = isPercentage ? baseCooldown * (1f - amount / 100f) : baseCooldown - amount;
+                break;
+            case WeaponUpgradeType.Damage:
+                baseDamage = isPercentage ? baseDamage * (1f + amount / 100f) : baseDamage + amount;
+                break;
+            case WeaponUpgradeType.Speed:
+                baseSpeed = isPercentage ? baseSpeed * (1f + amount / 100f) : baseSpeed + amount;
+                break;
         }
     }
 
-    IEnumerator FireProjectilesWithInterval(Transform enemy)
+
+    public override void RefreshWeaponStats()
     {
-        Vector3 baseDir = (enemy.position - transform.position).normalized;
+        base.RefreshWeaponStats();
+    }
 
-        for (int i = 0; i < wandStats.amount; i++)
-        {
-            // Optional: slight angle offset
-            float angleOffset = (i - (wandStats.amount - 1) / 2f) * 5f;
-            Vector3 dir = Quaternion.Euler(0, angleOffset, 0) * baseDir;
+    public void ReinitializeWeaponAfterUpgrade()
+    {
+        RefreshWeaponStats();
+        StartAttacking();
+    }
 
-            Vector3 spawnPos = transform.position + dir * 1f;
-            GameObject bullet = ObjectPooler.Instance.SpawnFromPool(projectileTag, spawnPos, Quaternion.identity);
-
-            MagicWandProjectile proj = bullet.GetComponent<MagicWandProjectile>();
-            if (proj != null)
-            {
-                proj.Launch(
-                    dir,
-                    wandStats.spd,
-                    wandStats.baseDMG,
-                    wandStats.pierce,
-                    wandStats.knockback,
-                    wandStats.critChance,
-                    wandStats.critMulti
-                );
-            }
-
-            // Wait before firing next projectile if interval is greater than 0
-            if (wandStats.projInterval > 0f)
-            {
-                yield return new WaitForSeconds(wandStats.projInterval);
-            }
-        }
+    public string GetWeaponIdentifier()
+    {
+        return weaponType;
     }
 }

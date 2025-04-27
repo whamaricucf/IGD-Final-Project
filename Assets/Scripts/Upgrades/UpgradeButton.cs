@@ -5,32 +5,46 @@ using TMPro;
 public class UpgradeButton : MonoBehaviour
 {
     [Header("UI Elements")]
-    public TextMeshProUGUI upgradeNameText;  // To display the upgrade's name
-    public Image upgradeIcon;  // To display the upgrade's icon
-    public TextMeshProUGUI upgradeDescriptionText;  // To show the upgrade's description inside the button
+    public TextMeshProUGUI upgradeNameText;
+    public Image upgradeIcon;
+    public TextMeshProUGUI upgradeDescriptionText;
 
-    private Upgrade upgrade;
+    private UpgradeSO upgrade;
+    private int displayedLevel; // new: store the level shown on the button
 
-    // Set the upgrade details for the button
-    public void SetUpgradeDetails(Upgrade upgradeData, int currentLevel)
+    public void SetUpgradeDetails(UpgradeSO upgradeData, int currentLevel)
     {
         upgrade = upgradeData;
+        displayedLevel = currentLevel; // store the level being shown
 
-        // Set the UI elements with the upgrade's info
+        if (upgrade == null)
+        {
+            Debug.LogError("UpgradeButton: No upgrade data provided!");
+            return;
+        }
+
         upgradeNameText.text = upgrade.upgradeName;
         upgradeIcon.sprite = upgrade.icon;
 
-        // Set the description based on the current upgrade level
-        upgradeDescriptionText.text = upgrade.GetUpgradeDescription(currentLevel);
+        if (upgrade.IsMaxLevel())
+        {
+            upgradeDescriptionText.text = "Max Level Reached!";
+        }
+        else
+        {
+            upgradeDescriptionText.text = upgrade.GetUpgradeDescription(displayedLevel); // use displayedLevel
+        }
     }
 
-    // Add an onClick listener for when the button is clicked
     public void OnUpgradeButtonClick()
     {
-        // Assuming UpgradeManager is in the scene, apply the selected upgrade
-        if (UpgradeManager.Instance != null)
+        if (UpgradeManager.Instance != null && upgrade != null)
         {
             UpgradeManager.Instance.ApplyUpgrade(upgrade);
+        }
+        else
+        {
+            Debug.LogError("UpgradeButton: Missing UpgradeManager or Upgrade!");
         }
     }
 }

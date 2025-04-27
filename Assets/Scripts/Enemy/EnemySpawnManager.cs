@@ -104,6 +104,10 @@ public class EnemySpawnManager : MonoBehaviour
         if (enemy != null)
         {
             enemy.SetActive(true);
+            if (enemy.TryGetComponent(out BaseEnemyAI enemyAI))
+            {
+                enemyAI.ForcePlaceOnNavMesh();
+            }
         }
     }
 

@@ -1,74 +1,116 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using static UpgradeTypes;
 
-public class GarlicAura : MonoBehaviour
+public class GarlicAura : Weapon, IWeaponUpgradeable
 {
-    private SphereCollider garlicCollider;
-    private Dictionary<GameObject, float> enemyHitTimers = new Dictionary<GameObject, float>();
+    private Coroutine damageCoroutine;
+    public LayerMask enemyLayerMask;
+    private Transform garlicVisual;
 
-    public WeaponData garlicStats;
-    public Transform garlicVisualTransform; // Assign in inspector or find it via child search
-
-    void Start()
+    private void OnEnable()
     {
-        if (garlicStats != null)
-        {
-            // Setup collider
-            garlicCollider = gameObject.AddComponent<SphereCollider>();
-            garlicCollider.isTrigger = true;
-            garlicCollider.radius = garlicStats.area;
+        if (garlicVisual == null)
+            garlicVisual = transform.Find("GarlicVisual");
 
-            // Update the visual size to match area
-            if (garlicVisualTransform != null)
+        RefreshWeaponStats();
+        StartAura();
+
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged += RefreshAuraVisual;
+    }
+
+    private void OnDisable()
+    {
+        if (damageCoroutine != null)
+            StopCoroutine(damageCoroutine);
+
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged -= RefreshAuraVisual;
+    }
+
+    public void StartAura()
+    {
+        if (damageCoroutine != null)
+            StopCoroutine(damageCoroutine);
+
+        damageCoroutine = StartCoroutine(DamageEnemies());
+    }
+
+    private IEnumerator DamageEnemies()
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        while (true)
+        {
+            Collider[] hits = Physics.OverlapSphere(transform.position, area, enemyLayerMask);
+
+            foreach (var hit in hits)
             {
-                float scale = garlicStats.area * 2f; // diameter = radius * 2
-                garlicVisualTransform.localScale = new Vector3(scale, garlicVisualTransform.localScale.y, scale);
+                if (hit.TryGetComponent(out IDamageable target))
+                {
+                    target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMulti);
+                }
             }
+
+            yield return new WaitForSeconds(Mathf.Max(0.05f, cooldown));
         }
     }
 
-    void Update()
+    public void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
     {
-        List<GameObject> toRemove = new List<GameObject>();
-        foreach (var entry in enemyHitTimers)
+        switch (type)
         {
-            if (Time.time >= entry.Value)
-                toRemove.Add(entry.Key);
+            case WeaponUpgradeType.Area:
+                baseArea = isPercentage ? baseArea * (1f + amount / 100f) : baseArea + amount;
+                break;
+            case WeaponUpgradeType.Damage:
+                baseDamage = isPercentage ? baseDamage * (1f + amount / 100f) : baseDamage + amount;
+                break;
+            case WeaponUpgradeType.Cooldown:
+                baseCooldown = isPercentage ? baseCooldown * (1f - amount / 100f) : baseCooldown - amount;
+                break;
         }
-
-        foreach (var key in toRemove)
-            enemyHitTimers.Remove(key);
     }
 
-    private void OnTriggerStay(Collider other)
+    public override void RefreshWeaponStats()
     {
-        if (!other.CompareTag("Enemy")) return;
+        base.RefreshWeaponStats();
+        UpdateAuraVisualScale();
+    }
 
-        // Wall block logic
-        if (garlicStats.wallBlock)
+    private void UpdateAuraVisualScale()
+    {
+        if (garlicVisual == null)
+            garlicVisual = transform.Find("GarlicVisual");
+
+        if (garlicVisual != null)
         {
-            Vector3 dirToEnemy = (other.transform.position - transform.position).normalized;
-            float dist = Vector3.Distance(transform.position, other.transform.position);
-            if (Physics.Raycast(transform.position, dirToEnemy, dist, LayerMask.GetMask("Wall")))
-                return;
+            float diameter = area * 2f;
+            garlicVisual.localScale = new Vector3(diameter, 0.1f, diameter);
         }
-
-        if (!enemyHitTimers.ContainsKey(other.gameObject) || Time.time >= enemyHitTimers[other.gameObject])
+        else
         {
-            enemyHitTimers[other.gameObject] = Time.time + garlicStats.hitDelay;
-
-            IDamageable target = other.GetComponent<IDamageable>();
-            if (target != null)
-            {
-                target.TakeDamage(
-                    garlicStats.baseDMG,
-                    garlicStats.knockback,
-                    transform.position,
-                    garlicStats.critChance,
-                    garlicStats.critMulti
-                );
-            }
+            Debug.LogWarning("GarlicAura: GarlicVisual not found!");
         }
+    }
+
+    private void RefreshAuraVisual()
+    {
+        RefreshWeaponStats();
+    }
+
+    public void ReinitializeWeaponAfterUpgrade()
+    {
+        if (damageCoroutine != null)
+            StopCoroutine(damageCoroutine);
+
+        RefreshWeaponStats();
+        StartAura();
+    }
+
+    public string GetWeaponIdentifier()
+    {
+        return weaponType;
     }
 }

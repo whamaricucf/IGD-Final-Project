@@ -1,259 +1,290 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UpgradeManager : MonoBehaviour
 {
     public static UpgradeManager Instance;
 
-    public Upgrade[] availableUpgrades; // Array of upgrades to choose from
+    [Header("Available Upgrades")]
+    public UpgradeSO[] availableUpgrades;
+
+    [Header("UI References")]
     public GameObject upgradeButtonPrefab;
     public Transform upgradeButtonContainer;
 
-    private Weapon playerWeapon;
-    private int upgradesSelected = 0;  // Counter for the selected upgrades
-    private int upgradesRequired = 0;  // How many upgrades are required based on current level
+    private GameManager gameManager;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-        }
         else
+            Destroy(gameObject);
+    }
+
+    private void Start()
+    {
+        CacheGameManager();
+        InitializeUpgradeLevels();
+        InitializeStartingWeaponLevels();
+
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged += RefreshAllWeaponsFromStats;
+    }
+
+    private void OnDestroy()
+    {
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.OnStatsChanged -= RefreshAllWeaponsFromStats;
+    }
+
+    private void CacheGameManager()
+    {
+        gameManager = GameObject.FindWithTag("GameManager")?.GetComponent<GameManager>();
+        if (gameManager == null)
+            Debug.LogError("UpgradeManager: GameManager not found!");
+    }
+
+    private void InitializeUpgradeLevels()
+    {
+        foreach (var upgrade in availableUpgrades)
         {
-            Destroy(gameObject);  // Destroy any duplicate instances
+            if (upgrade != null)
+                upgrade.ResetUpgradeLevel();
         }
     }
 
-    void Start()
+    private void InitializeStartingWeaponLevels()
     {
-        InitializePlayerWeapon();
-        ShowUpgrades();  // Directly invoke ShowUpgrades() instead of calling SetupUpgradeUI()
-    }
-
-    private void InitializePlayerWeapon()
-    {
-        // Find the player object
         GameObject playerObject = GameObject.FindWithTag("Player");
-
-        if (playerObject != null)
+        if (playerObject == null)
         {
-            // Find the weapon child (e.g., MagicWand, KingBible, or GarlicAura)
-            GameObject activeWeaponObject = playerObject.transform.Find("MagicWand").gameObject; // Example for MagicWand
-
-            if (activeWeaponObject != null)
-            {
-                playerWeapon = activeWeaponObject.GetComponent<Weapon>(); // Get the Weapon component from the active weapon
-            }
-            else
-            {
-                Debug.LogError("Weapon child not found.");
-                return;  // Exit if no weapon is found
-            }
+            Debug.LogError("UpgradeManager: Player not found!");
+            return;
         }
-        else
+
+        Weapon[] weapons = playerObject.GetComponentsInChildren<Weapon>(true);
+
+        foreach (var weapon in weapons)
         {
-            Debug.LogError("Player object not found or is not tagged with 'Player'.");
-            return;  // Exit if the player object is not found
+            if (weapon == null || !weapon.gameObject.activeSelf || weapon.weaponData == null)
+                continue;
+
+            string weaponDataName = weapon.weaponData.name.Replace(" ", "");
+            UpgradeSO weaponUpgrade = availableUpgrades.FirstOrDefault(u => u != null && u.upgradeName.Replace(" ", "") == weaponDataName);
+
+            if (weaponUpgrade != null && weaponUpgrade is WeaponUpgradeSO weaponSO)
+            {
+                Debug.Log($"[UpgradeManager] Detected active weapon: {weapon.weaponData.name}, setting upgrade level to 1.");
+                weaponSO.SetCurrentLevel(1);
+            }
         }
     }
 
     public void ShowUpgrades()
     {
-        // Ensure upgrades are not shown if they've all been maxed
-        if (AreAllUpgradesMaxed()) return;
-
-        // Clear existing UI buttons before creating new ones
-        foreach (Transform child in upgradeButtonContainer)
+        if (AreAllUpgradesMaxed())
         {
-            Destroy(child.gameObject);  // Destroy all existing buttons
-        }
-
-        upgradesRequired = Mathf.Max(1, PlayerExperience.Instance.currentLevel - 1);
-
-        // Create a list that contains all upgrades weighted by their weight
-        List<Upgrade> weightedUpgrades = new List<Upgrade>();
-
-        // Populate the weighted list by adding upgrades based on their weight
-        foreach (var upgrade in availableUpgrades)
-        {
-            int weight = Mathf.CeilToInt(upgrade.weight); // Get the weight and round it to an integer
-            for (int i = 0; i < weight; i++)
-            {
-                weightedUpgrades.Add(upgrade);  // Add the upgrade to the list based on its weight
-            }
-        }
-
-        // Ensure we don't select more than 3 unique upgrades
-        List<Upgrade> selectedUpgrades = new List<Upgrade>();
-        HashSet<Upgrade> selectedUpgradeSet = new HashSet<Upgrade>();  // To ensure uniqueness
-
-        // Randomly select 3 unique upgrades from the weighted list
-        while (selectedUpgrades.Count < 3 && weightedUpgrades.Count > 0)
-        {
-            int randomIndex = Random.Range(0, weightedUpgrades.Count);
-            var selectedUpgrade = weightedUpgrades[randomIndex];
-
-            if (!selectedUpgradeSet.Contains(selectedUpgrade))
-            {
-                selectedUpgrades.Add(selectedUpgrade);
-                selectedUpgradeSet.Add(selectedUpgrade);
-            }
-
-            weightedUpgrades.RemoveAt(randomIndex);  // Remove the selected upgrade to avoid selecting it again
-        }
-
-        // Create buttons for each selected upgrade
-        foreach (var upgrade in selectedUpgrades)
-        {
-            if (ShouldUpgradeBeAvailable(upgrade))
-            {
-                GameObject upgradeButton = Instantiate(upgradeButtonPrefab, upgradeButtonContainer);
-                UpgradeButton buttonScript = upgradeButton.GetComponent<UpgradeButton>();
-
-                string weaponType = playerWeapon?.GetWeaponType();  // Safe null check for playerWeapon
-                int currentLevel = playerWeapon?.GetCurrentUpgradeLevel(weaponType) ?? 0;  // Safe null check
-
-                buttonScript.SetUpgradeDetails(upgrade, currentLevel);
-
-                buttonScript.GetComponent<Button>().onClick.AddListener(() => ApplyUpgrade(upgrade));
-            }
-        }
-    }
-
-
-
-
-    private bool AreAllUpgradesMaxed()
-    {
-        if (playerWeapon == null || PlayerStats.Instance == null)
-        {
-            Debug.LogError("Player weapon or PlayerStats is null.");
-            return true;
-        }
-
-        return IsWeaponUpgradesMaxed() && IsPassiveUpgradesMaxed();
-    }
-
-    private bool IsWeaponUpgradesMaxed()
-    {
-        if (playerWeapon == null)
-        {
-            Debug.LogError("Player weapon is not initialized.");
-            return false;
-        }
-
-        return playerWeapon.GetCurrentUpgradeLevel("Damage") >= 8 &&
-               playerWeapon.GetCurrentUpgradeLevel("Speed") >= 8;
-    }
-
-    private bool IsPassiveUpgradesMaxed()
-    {
-        return PlayerStats.Instance.healthLevel >= 5 && PlayerStats.Instance.speedLevel >= 5;
-    }
-
-    public void ApplyUpgrade(Upgrade selectedUpgrade)
-    {
-        if (selectedUpgrade is WeaponUpgrade weaponUpgrade)
-        {
-            playerWeapon?.ApplyUpgrade(weaponUpgrade);  // Apply the weapon upgrade
-            Debug.Log($"Weapon upgrade applied: {weaponUpgrade.upgradeName}");
-        }
-        else if (selectedUpgrade is PassiveUpgrade passiveUpgrade)
-        {
-            ApplyPassiveUpgrade(passiveUpgrade);
-            Debug.Log($"Passive upgrade applied: {passiveUpgrade.upgradeName}");
-        }
-
-        upgradesSelected++;
-
-        // Check if the required number of upgrades has been selected
-        if (upgradesSelected >= upgradesRequired)
-        {
-            CloseUpgradeMenu(); // Close the upgrade menu when all required upgrades are selected.
-            ResumeGame();  // Call GameManager's ResumeGame to resume the game after upgrade
-        }
-    }
-
-    public void ResumeGame()
-    {
-        // Ensure that the GameManager correctly resumes the game
-        GameManager gameManager = GameObject.FindWithTag("GameManager")?.GetComponent<GameManager>();
-
-        if (gameManager != null)
-        {
-            gameManager.ResumeGame();  // Resume GameManager's logic without resetting the timer
-            Debug.Log("Game resumed after upgrade.");
-        }
-        else
-        {
-            Debug.LogError("GameManager not found in the scene.");
-        }
-    }
-
-
-
-
-    private void ApplyPassiveUpgrade(PassiveUpgrade upgrade)
-    {
-        if (PlayerStats.Instance == null)
-        {
-            Debug.LogError("PlayerStats.Instance is null.");
+            CloseUpgradeMenu();
+            ResumeGame();
             return;
         }
 
-        switch (upgrade.upgradeType)
+        foreach (Transform child in upgradeButtonContainer)
+            Destroy(child.gameObject);
+
+        List<UpgradeSO> validUpgrades = availableUpgrades
+            .Where(u => u != null && !IsUpgradeMaxed(u) && IsUpgradeCompatibleWithCurrentWeapons(u))
+            .ToList();
+
+        if (validUpgrades.Count == 0)
         {
-            case "Health":
-                PlayerStats.Instance.IncreaseHealth();
-                break;
-            case "Speed":
-                PlayerStats.Instance.IncreaseSpeed();
-                break;
-            case "Damage":
-                PlayerStats.Instance.IncreaseDamage();
-                break;
-            case "Regen":
-                PlayerStats.Instance.IncreaseRegen();
-                break;
-            case "Magnet":
-                PlayerStats.Instance.IncreaseMagnet(1);
-                break;
-            case "Luck":
-                PlayerStats.Instance.IncreaseLuck(1);
-                break;
-            case "Armor":
-                PlayerStats.Instance.IncreaseArmor(1);
-                break;
-            case "Growth":
-                PlayerStats.Instance.ApplyExperienceMultiplier(1);
-                break;
-            case "Revival":
-                PlayerStats.Instance.IncreaseRevival();
-                break;
+            CloseUpgradeMenu();
+            ResumeGame();
+            return;
+        }
+
+        List<UpgradeSO> weightedUpgrades = validUpgrades
+            .SelectMany(u => Enumerable.Repeat(u, Mathf.Max(1, Mathf.CeilToInt(u.weight))))
+            .ToList();
+
+        List<UpgradeSO> selectedUpgrades = new List<UpgradeSO>();
+        int upgradesToShow = Mathf.Min(3, validUpgrades.Count);
+
+        while (selectedUpgrades.Count < upgradesToShow && weightedUpgrades.Count > 0)
+        {
+            int index = Random.Range(0, weightedUpgrades.Count);
+            UpgradeSO candidate = weightedUpgrades[index];
+
+            if (!selectedUpgrades.Contains(candidate))
+                selectedUpgrades.Add(candidate);
+
+            weightedUpgrades.RemoveAll(u => u == candidate);
+        }
+
+        foreach (var upgrade in selectedUpgrades)
+            CreateUpgradeButton(upgrade);
+    }
+
+    private void CreateUpgradeButton(UpgradeSO upgrade)
+    {
+        GameObject buttonObj = Instantiate(upgradeButtonPrefab, upgradeButtonContainer);
+        UpgradeButton button = buttonObj.GetComponent<UpgradeButton>();
+        button.SetUpgradeDetails(upgrade, GetCurrentUpgradeLevel(upgrade));
+    }
+
+    public void ApplyUpgrade(UpgradeSO selectedUpgrade)
+    {
+        if (selectedUpgrade == null)
+        {
+            Debug.LogError("Selected upgrade is null!");
+            return;
+        }
+
+        if (selectedUpgrade is PassiveUpgradeSO passive)
+        {
+            passive.ApplyUpgrade(PlayerStats.Instance);
+            PassiveUpgradesHUD.Instance?.RegisterPassiveUpgrade(passive.upgradeName, passive.icon, GetCurrentUpgradeLevel(passive));
+        }
+        else if (selectedUpgrade is WeaponUpgradeSO weaponUpgrade)
+        {
+            ApplyWeaponUpgrade(weaponUpgrade);
+        }
+
+        if (IsUpgradeMaxed(selectedUpgrade))
+        {
+            availableUpgrades = availableUpgrades.Where(u => u != selectedUpgrade).ToArray();
+            Debug.Log($"[UpgradeManager] {selectedUpgrade.upgradeName} reached max level and was removed.");
+        }
+
+        PlayerExperience.Instance.pendingUpgradePicks--;
+        PlayerExperience.Instance.UpgradeSelected();
+
+        if (PlayerExperience.Instance.pendingUpgradePicks <= 0)
+        {
+            CloseUpgradeMenu();
+            ResumeGame();
+        }
+        else
+        {
+            ShowUpgrades();
         }
     }
 
-    private bool ShouldUpgradeBeAvailable(Upgrade upgrade)
+    private void ApplyWeaponUpgrade(WeaponUpgradeSO weaponUpgrade)
     {
-        string weaponType = playerWeapon?.GetWeaponType();  // Safe null check
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null)
+            return;
 
-        if (upgrade is WeaponUpgrade)
+        var upgradeables = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
+
+        foreach (var weapon in upgradeables)
         {
-            return true;  // Weapon upgrades are always available if unlocked
+            if (weapon == null) continue;
+
+            bool compatible = true;
+
+            if (weaponUpgrade.compatibleWeaponTags != null && weaponUpgrade.compatibleWeaponTags.Count > 0)
+            {
+                if (weapon is Weapon weaponComponent && weaponComponent.weaponData != null)
+                {
+                    string weaponTag = weaponComponent.weaponData.wepName.Replace(" ", "");
+                    compatible = weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag);
+                }
+                else
+                {
+                    compatible = false;
+                }
+            }
+
+            if (compatible)
+            {
+                weaponUpgrade.ApplyUpgrade(weapon);
+                weapon.RefreshWeaponStats();
+                weapon.ReinitializeWeaponAfterUpgrade(); // ✨ NEW - refresh behavior!
+            }
+        }
+    }
+
+    private bool AreAllUpgradesMaxed()
+    {
+        return availableUpgrades.All(u => u == null || IsUpgradeMaxed(u));
+    }
+
+    private bool IsUpgradeMaxed(UpgradeSO upgrade)
+    {
+        return upgrade != null && upgrade.IsMaxLevel();
+    }
+
+    private bool IsUpgradeCompatibleWithCurrentWeapons(UpgradeSO upgrade)
+    {
+        if (upgrade is not WeaponUpgradeSO weaponUpgrade)
+            return true;
+
+        if (weaponUpgrade.compatibleWeaponTags == null || weaponUpgrade.compatibleWeaponTags.Count == 0)
+            return true;
+
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null)
+            return false;
+
+        var weaponScripts = playerObject.GetComponentsInChildren<Weapon>(true);
+
+        foreach (var weapon in weaponScripts)
+        {
+            if (weapon == null || weapon.weaponData == null)
+                continue;
+
+            string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
+
+            if (weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag))
+                return true;
         }
 
-        // Passive upgrades are available based on player progression
-        return upgrade is PassiveUpgrade;
+        return false;
+    }
+
+    public int GetCurrentUpgradeLevel(UpgradeSO upgrade)
+    {
+        if (upgrade == null)
+            return 0;
+
+        return upgrade.GetCurrentLevel();
+    }
+
+    private void RefreshAllWeaponsFromStats()
+    {
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null)
+            return;
+
+        var upgradeables = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
+
+        foreach (var weapon in upgradeables)
+            weapon.RefreshWeaponStats();
     }
 
     private void CloseUpgradeMenu()
     {
-        AdditiveScenes additiveScenes = FindObjectOfType<AdditiveScenes>();
-        if (additiveScenes != null)
+        FindObjectOfType<AdditiveScenes>()?.CloseUpgradeMenu();
+        PlayerExperience.Instance.upgradeScreenTriggered = false;
+    }
+
+    private void ResumeGame()
+    {
+        gameManager?.ResumeGame();
+    }
+
+    public void ResetAllUpgrades()
+    {
+        Debug.Log("[UpgradeManager] Resetting all upgrades...");
+
+        foreach (var upgrade in availableUpgrades)
         {
-            additiveScenes.CloseUpgradeMenu();
+            if (upgrade == null) continue;
+            upgrade.ResetUpgradeLevel();
         }
     }
 }
