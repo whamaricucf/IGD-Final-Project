@@ -47,4 +47,17 @@ public class UpgradeButton : MonoBehaviour
             Debug.LogError("UpgradeButton: Missing UpgradeManager or Upgrade!");
         }
     }
+
+    public void SetUnlockWeaponDetails(WeaponUpgradeSO weaponUpgrade)
+    {
+        if (upgradeNameText != null)
+            upgradeNameText.text = weaponUpgrade.upgradeName;
+
+        if (upgradeDescriptionText != null)
+            upgradeDescriptionText.text = "Unlocks new weapon!";
+
+        if (upgradeIcon != null)
+            upgradeIcon.sprite = weaponUpgrade.icon;
+    }
+
 }

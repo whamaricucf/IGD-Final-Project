@@ -25,8 +25,8 @@ public class MagicWand : Weapon, IWeaponUpgradeable
                 Debug.LogWarning("[MagicWand] Player not found! FirePoint cannot be assigned.");
         }
 
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply any active upgrades
         RefreshWeaponStats(); // Refresh live stats
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply any active upgrades
         StartAttacking(); // Begin firing
     }
 
@@ -58,7 +58,7 @@ public class MagicWand : Weapon, IWeaponUpgradeable
             GameObject target = FindClosestEnemy();
             if (target != null)
             {
-                int totalProjectiles = Mathf.Max(1, amount);
+                int totalProjectiles = Mathf.Max(1, amount + weaponAmountBonus);
                 float maxArc = 3f; // Max arc spread in degrees
                 float arcStep = totalProjectiles > 1 ? maxArc / (totalProjectiles - 1) : 0f;
                 float startingAngle = -maxArc / 2f;
@@ -142,7 +142,7 @@ public class MagicWand : Weapon, IWeaponUpgradeable
         switch (type)
         {
             case WeaponUpgradeType.Amount:
-                weaponAmountBonus += Mathf.RoundToInt(isPercentage ? weaponAmountBonus * (amount / 100f) : amount);
+                weaponAmountBonus += Mathf.RoundToInt(isPercentage ? baseAmount * (amount / 100f) : amount);
                 break;
             case WeaponUpgradeType.Cooldown:
                 baseCooldown = isPercentage ? baseCooldown * (1f - amount / 100f) : baseCooldown - amount;
@@ -154,13 +154,28 @@ public class MagicWand : Weapon, IWeaponUpgradeable
                 baseSpeed = isPercentage ? baseSpeed * (1f + amount / 100f) : baseSpeed + amount;
                 break;
         }
+        RestartAttacking();
     }
+
+    private void RestartAttacking()
+    {
+        if (attackCoroutine != null)
+            StopCoroutine(attackCoroutine);
+
+        attackCoroutine = StartCoroutine(FireProjectiles());
+    }
+
 
 
     public override void RefreshWeaponStats()
     {
         base.RefreshWeaponStats();
+
+        // Reset cooldown before modifiers
+        cooldown = Mathf.Max(0.05f, baseCooldown);
     }
+
+
 
     public void ReinitializeWeaponAfterUpgrade()
     {

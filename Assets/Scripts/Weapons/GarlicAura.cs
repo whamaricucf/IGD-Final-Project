@@ -17,9 +17,8 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
             weaponType = weaponData.wepName;
         }
 
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
-
         RefreshWeaponStats(); // Refresh final stats
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
         StartAura(); // Start aura damaging enemies
 
         if (PlayerStats.Instance != null)
@@ -84,8 +83,10 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
     public override void RefreshWeaponStats()
     {
         base.RefreshWeaponStats();
-        UpdateAuraVisualScale();
+
+        UpdateAuraVisualScale(); // Still scale visual after upgrading area
     }
+
 
     private void UpdateAuraVisualScale()
     {

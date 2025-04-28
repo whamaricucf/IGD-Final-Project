@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using static UpgradeTypes;
+using System.Linq;
 
 [CreateAssetMenu(fileName = "NewWeaponUpgrade", menuName = "Upgrades/Weapon Upgrade")]
 public class WeaponUpgradeSO : UpgradeSO
@@ -13,6 +14,7 @@ public class WeaponUpgradeSO : UpgradeSO
         public bool[] isPercentageBased;
         public string description;
     }
+
     [Header("Summon Settings")]
     public bool isWeaponSummonUpgrade = false;
 
@@ -33,7 +35,7 @@ public class WeaponUpgradeSO : UpgradeSO
     {
         if (weapon == null)
         {
-            Debug.LogError("WeaponUpgradeSO: IWeaponUpgradeable weapon is null when applying upgrade!");
+            Debug.LogError($"WeaponUpgradeSO: IWeaponUpgradeable weapon is null when applying upgrade for {upgradeName}!");
             return;
         }
 
@@ -43,7 +45,15 @@ public class WeaponUpgradeSO : UpgradeSO
             return;
         }
 
-        var data = upgradeLevels[currentLevel];
+        // Level 1 = unlock, do not apply bonuses yet
+        if (currentLevel <= 1)
+        {
+            Debug.Log($"WeaponUpgradeSO: Skipping applying upgrade effects for {upgradeName} at Level {currentLevel} (unlock only).");
+            return;
+        }
+
+        // Apply based on (currentLevel - 2), not currentLevel - 1
+        var data = upgradeLevels[currentLevel - 2];
 
         for (int i = 0; i < data.upgradeTypes.Length; i++)
         {
@@ -54,8 +64,11 @@ public class WeaponUpgradeSO : UpgradeSO
             weapon.ApplyWeaponUpgrade(type, amount, isPercentage);
         }
 
-        currentLevel++;
+        weapon.ReinitializeWeaponAfterUpgrade();
     }
+
+
+
 
     public override int GetCurrentLevel()
     {
@@ -78,22 +91,44 @@ public class WeaponUpgradeSO : UpgradeSO
         {
             if (level >= 0 && level < upgradeLevels.Length)
                 return upgradeLevels[level].description;
-            else if (upgradeLevels.Length > 0)
+            else
                 return "Max level reached!";
         }
 
         return "No upgrades available.";
     }
 
+
     public void SetCurrentLevel(int level)
     {
         currentLevel = Mathf.Clamp(level, 0, maxLevel);
+        Debug.Log($"Weapon upgrade level set to {currentLevel} for {upgradeName}");
     }
+
+
     public void ApplyLevelUpEffect()
     {
-        // Re-apply whatever you normally do when leveling up
-        // Like adding projectile count, modifying cooldown, etc
-        ApplyUpgrade(FindObjectOfType<PlayerStats>());
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null) return;
+
+        var weapons = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
+
+        foreach (var weapon in weapons)
+        {
+            if (weapon == null || weapon is not Weapon weaponComponent || weaponComponent.weaponData == null)
+                continue; // SKIP
+
+            if (!weaponComponent.gameObject.activeInHierarchy)
+                continue; // SKIP inactive weapons
+
+            string weaponTag = weaponComponent.weaponData.wepName.Replace(" ", "");
+
+            if (compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag))
+            {
+                ApplyUpgrade(weapon);
+            }
+        }
+
     }
 
 }

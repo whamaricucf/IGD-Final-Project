@@ -1,4 +1,6 @@
 using UnityEngine;
+using System;
+using System.Collections;
 
 public class Weapon : MonoBehaviour
 {
@@ -10,7 +12,7 @@ public class Weapon : MonoBehaviour
     public float duration;
     public float projInterval;
     public float hitDelay;
-    public float knockback; // ✅
+    public float knockback;
     public float critChance;
     public float critMulti;
     public int maxLvl;
@@ -40,6 +42,28 @@ public class Weapon : MonoBehaviour
 
     protected int weaponAmountBonus = 0; // Used for weapon upgrades like "fires 1 more projectile"
 
+    // --- 🔥 NEW: Add public getters ---
+    public float BaseDamage => baseDamage;
+    public float BaseSpeed => baseSpeed;
+    public float BaseArea => baseArea;
+    public float BaseCooldown => baseCooldown;
+    public float BaseDuration => baseDuration;
+    public float BaseProjInterval => baseProjInterval;
+    public float BaseHitDelay => baseHitDelay;
+    public float BaseKnockback => baseKnockback;
+    public float BaseCritChance => baseCritChance;
+    public float BaseCritMulti => baseCritMulti;
+    public int BaseAmount => baseAmount;
+    public int BasePierce => basePierce;
+    public int BaseLimit => baseLimit;
+
+    public int WeaponAmountBonus
+    {
+        get => weaponAmountBonus;
+        set => weaponAmountBonus = value; // Allow controlled setting
+    }
+    // --- 🔥 ---
+
     protected virtual void Start()
     {
         if (weaponData != null)
@@ -48,11 +72,7 @@ public class Weapon : MonoBehaviour
             ApplyWeaponData();
             weaponType = weaponData.wepName;
         }
-
-        // AFTER cloning weaponData, tell UpgradeManager to reapply bonuses
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this);
     }
-
 
     public virtual void ApplyWeaponData()
     {
@@ -74,7 +94,6 @@ public class Weapon : MonoBehaviour
 
         wallBlock = weaponData.wallBlock;
 
-        // Initialize live stats to base stats
         RefreshWeaponStats();
     }
 
@@ -83,7 +102,6 @@ public class Weapon : MonoBehaviour
         if (PlayerStats.Instance == null)
             return;
 
-        // Correct scaling based on base stats
         damage = baseDamage * PlayerStats.Instance.damage;
         area = baseArea * PlayerStats.Instance.area;
         cooldown = Mathf.Max(0.05f, baseCooldown * (1f - PlayerStats.Instance.cd));
@@ -95,6 +113,6 @@ public class Weapon : MonoBehaviour
         knockback = baseKnockback;
 
         amount = baseAmount + weaponAmountBonus + PlayerStats.Instance.amount;
-        pierce = basePierce; // (optional — if you want pierce upgrades, add here)
+        pierce = basePierce;
     }
 }

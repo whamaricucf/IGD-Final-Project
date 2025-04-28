@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7fb1fbd67a0ff64faec6168b3a03aa4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 0}
   damage: 0
   speed: 0
   area: 0
@@ -64,6 +65,7 @@ MonoBehaviour:
   weaponType: MagicWand
   weaponData: {fileID: 11400000, guid: 504c16b2b2287fa46b497a792802d072, type: 2}
   firePoint: {fileID: 1399808400614081791}
+  weaponUpgradeSO: {fileID: 0}
 --- !u!114 &7222770043060967274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -76,6 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1a294c1dc185b44bb74a539a7ff131, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 11400000, guid: 4b7bb7b44cf59bf4182d5de44e7601bb, type: 2}
   damage: 0
   speed: 0
   area: 0
@@ -5063,6 +5066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db213a2eda315c949acc9c580bcbff1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 0}
   damage: 0
   speed: 0
   area: 0
@@ -5096,6 +5100,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1a294c1dc185b44bb74a539a7ff131, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 11400000, guid: 1ecc27519faeeff4e9db1dc6fc7a78f9, type: 2}
   damage: 0
   speed: 0
   area: 0
@@ -5426,6 +5431,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba5192c7b10a6eb48aee2d8faf5909b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 0}
   damage: 0
   speed: 0
   area: 0
@@ -5445,6 +5451,7 @@ MonoBehaviour:
   weaponType: KingBible
   weaponData: {fileID: 11400000, guid: b1e8e61bf9cb3e54e81f5aaf7a78b3ac, type: 2}
   playerTransform: {fileID: 1399808400614081791}
+  weaponUpgradeSO: {fileID: 0}
 --- !u!114 &6026894097692984108
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5457,6 +5464,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1a294c1dc185b44bb74a539a7ff131, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  weaponUpgradeSO: {fileID: 11400000, guid: cd5f4b9f03c491c46b999c05ca04458e, type: 2}
   damage: 0
   speed: 0
   area: 0

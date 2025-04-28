@@ -17,9 +17,8 @@ public class KingBible : Weapon, IWeaponUpgradeable
             weaponType = weaponData.wepName;
         }
 
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
-
         RefreshWeaponStats(); // Refresh final stats
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
         StartOrbit(); // Start firing behavior
     }
 
@@ -91,7 +90,7 @@ public class KingBible : Weapon, IWeaponUpgradeable
             }
         }
 
-        activeBibles = new GameObject[Mathf.Max(1, amount)];
+        activeBibles = new GameObject[Mathf.Max(1, amount + weaponAmountBonus)];
 
         for (int i = 0; i < activeBibles.Length; i++)
         {
@@ -128,13 +127,16 @@ public class KingBible : Weapon, IWeaponUpgradeable
                 baseSpeed = isPercentage ? baseSpeed * (1f + amount / 100f) : baseSpeed + amount;
                 break;
         }
+        ReinitializeWeaponAfterUpgrade();
     }
+
 
 
     public override void RefreshWeaponStats()
     {
         base.RefreshWeaponStats();
     }
+
 
     public void ReinitializeWeaponAfterUpgrade()
     {

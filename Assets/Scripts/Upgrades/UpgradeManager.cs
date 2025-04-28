@@ -25,7 +25,6 @@ public class UpgradeManager : MonoBehaviour
         public int levelWhenPicked;
     }
 
-
     private void Awake()
     {
         if (Instance == null)
@@ -33,12 +32,14 @@ public class UpgradeManager : MonoBehaviour
         else
             Destroy(gameObject);
     }
-
+    private SaveData cachedSaveData;
     private void Start()
     {
         CacheGameManager();
+        cachedSaveData = SaveManager.Load(); // <-- add this
         StartCoroutine(WaitForPlayerAndInitialize());
     }
+
 
     private IEnumerator WaitForPlayerAndInitialize()
     {
@@ -46,15 +47,10 @@ public class UpgradeManager : MonoBehaviour
             yield return null;
 
         InitializeUpgradeLevels();
-        InitializeStartingWeaponLevels();
-
-        // Force re-run EquipStartingWeapon() after initializing upgrades
-        GameManager.Instance?.EquipStartingWeapon();
 
         if (PlayerStats.Instance != null)
             PlayerStats.Instance.OnStatsChanged += RefreshAllWeaponsFromStats;
     }
-
 
     private void OnDestroy()
     {
@@ -78,7 +74,7 @@ public class UpgradeManager : MonoBehaviour
         }
     }
 
-    private void InitializeStartingWeaponLevels()
+    public void InitializeStartingWeaponLevels()
     {
         GameObject playerObject = GameObject.FindWithTag("Player");
         if (playerObject == null)
@@ -96,12 +92,7 @@ public class UpgradeManager : MonoBehaviour
 
             string weaponDataName = weapon.weaponData.name.Replace(" ", "");
 
-            if (!IsWeaponUnlocked(weaponDataName))
-            {
-                weapon.gameObject.SetActive(false);
-                continue;
-            }
-
+            // Only care about weapons that are already active (starting weapon)
             if (!weapon.gameObject.activeSelf)
                 continue;
 
@@ -109,51 +100,118 @@ public class UpgradeManager : MonoBehaviour
 
             if (weaponUpgrade != null && weaponUpgrade is WeaponUpgradeSO weaponSO)
             {
-                Debug.Log($"[UpgradeManager] Detected active weapon: {weapon.weaponData.name}, setting Level 1 cleanly.");
+                Debug.Log($"[UpgradeManager] Detected equipped starting weapon: {weapon.weaponData.name}");
 
+                // Important: Set currentLevel to 1 (unlocked), but do NOT apply upgrade effects yet
                 weaponSO.SetCurrentLevel(1);
 
-                // Add to picked list if not already there
-                bool alreadyExists = pickedUpgrades.Any(p => p.upgrade == weaponSO);
-                if (!alreadyExists)
+                if (!pickedUpgrades.Any(p => p.upgrade == weaponSO))
                 {
-                    weaponSO.SetCurrentLevel(1); // Set weapon upgrade to Level 1
                     pickedUpgrades.Add(new PickedUpgrade
                     {
                         upgrade = weaponSO,
-                        levelWhenPicked = 1 // explicitly says: 'already picked once'
+                        levelWhenPicked = 1
                     });
                 }
 
+                // Just refresh base stats for the weapon
                 weapon.RefreshWeaponStats();
+            }
+        }
 
+        // Initialize all OTHER weapon upgrades (that are NOT active at start) to locked state
+        foreach (var upgrade in availableUpgrades)
+        {
+            if (upgrade != null && upgrade is WeaponUpgradeSO weaponUpgrade)
+            {
+                if (pickedUpgrades.Any(p => p.upgrade == weaponUpgrade))
+                    continue;
+
+                foreach (string tag in weaponUpgrade.compatibleWeaponTags)
+                {
+                    string cleanTag = tag.Replace(" ", "");
+                    if (IsWeaponUnlocked(cleanTag))
+                    {
+                        Debug.Log($"[UpgradeManager] Detected unlocked weapon upgrade: {weaponUpgrade.upgradeName}, initializing at Level 0 (locked).");
+
+                        weaponUpgrade.SetCurrentLevel(0); // Level 0 = locked, awaiting first pick
+                        break;
+                    }
+                }
             }
         }
     }
+
+
 
 
     public void RefreshWeaponUpgradesOnWeapon(Weapon weapon)
     {
-        foreach (var picked in pickedUpgrades)
+        if (weapon == null || weapon.weaponData == null)
+            return;
+
+        // Reset live stats back to base values
+        weapon.WeaponAmountBonus = 0;
+        weapon.cooldown = Mathf.Max(0.05f, weapon.BaseCooldown);
+        weapon.area = weapon.BaseArea;
+        weapon.damage = weapon.BaseDamage;
+        weapon.speed = weapon.BaseSpeed;
+        weapon.duration = weapon.BaseDuration;
+        weapon.knockback = weapon.BaseKnockback;
+        weapon.critChance = weapon.BaseCritChance;
+        weapon.critMulti = weapon.BaseCritMulti;
+        weapon.pierce = weapon.BasePierce;
+
+        // Instead of pickedUpgrades, use all available upgrades
+        foreach (var upgrade in availableUpgrades)
         {
-            if (picked.upgrade is WeaponUpgradeSO weaponUpgrade)
+            if (upgrade is WeaponUpgradeSO weaponUpgrade)
             {
                 string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
                 if (weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag))
                 {
-                    weaponUpgrade.ApplyUpgrade(weapon as IWeaponUpgradeable);
+                    if (weaponUpgrade.GetCurrentLevel() > 0)
+                    {
+                        weaponUpgrade.ApplyUpgrade(weapon as IWeaponUpgradeable);
+                    }
                 }
             }
         }
 
-        weapon.RefreshWeaponStats();
+        weapon.RefreshWeaponStats(); // Final refresh to include PlayerStats bonuses
     }
 
 
+    public void RefreshOnlyWeaponStats(Weapon weapon)
+    {
+        weapon.RefreshWeaponStats(); // Only refresh PlayerStats-related things
+    }
+
+
+    // New method that was missing, to handle stats refresh
+    private void RefreshAllWeaponsFromStats()
+    {
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null)
+            return;
+
+        var upgradeables = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
+
+        foreach (var weapon in upgradeables)
+        {
+            if (weapon is Weapon weaponComponent && weaponComponent.gameObject.activeSelf)
+            {
+                RefreshOnlyWeaponStats(weaponComponent); // <-- NOT RefreshWeaponUpgradesOnWeapon!
+            }
+        }
+    }
 
 
     public void ShowUpgrades()
     {
+        // Remove maxed upgrades before anything else
+        availableUpgrades = availableUpgrades.Where(u => u != null && !u.IsMaxLevel()).ToArray();
+
         foreach (Transform child in upgradeButtonContainer)
             Destroy(child.gameObject);
 
@@ -207,30 +265,9 @@ public class UpgradeManager : MonoBehaviour
 
     private int GetEffectiveUpgradeLevel(UpgradeSO upgrade)
     {
-        if (upgrade is WeaponUpgradeSO weaponUpgrade)
-        {
-            string weaponName = weaponUpgrade.upgradeName.Replace(" ", "");
+        if (upgrade == null)
+            return 0;
 
-            GameObject playerObject = GameObject.FindWithTag("Player");
-            if (playerObject != null)
-            {
-                Weapon[] weapons = playerObject.GetComponentsInChildren<Weapon>(true);
-                foreach (var weapon in weapons)
-                {
-                    if (weapon != null && weapon.weaponData != null)
-                    {
-                        string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
-                        if (weapon.gameObject.activeSelf && weaponTag == weaponName)
-                        {
-                            // Weapon is already active -> treat it as if picked once already
-                            return weaponUpgrade.GetCurrentLevel() + 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Otherwise, just return the real current level
         return upgrade.GetCurrentLevel();
     }
 
@@ -239,8 +276,41 @@ public class UpgradeManager : MonoBehaviour
     {
         GameObject buttonObj = Instantiate(upgradeButtonPrefab, upgradeButtonContainer);
         UpgradeButton button = buttonObj.GetComponent<UpgradeButton>();
-        button.SetUpgradeDetails(upgrade, GetEffectiveUpgradeLevel(upgrade));
+
+        // Always show next level the player will reach by picking this upgrade
+        int displayLevel = Mathf.Clamp(upgrade.GetCurrentLevel() + 1, 1, upgrade.maxLevel);
+
+
+
+        if (upgrade is WeaponUpgradeSO weaponUpgrade)
+        {
+            // ONLY show Unlock Weapon if it's Level 0 *AND* the weapon is actually locked
+            if (weaponUpgrade.GetCurrentLevel() == 0 && !IsWeaponUnlocked(weaponUpgrade.compatibleWeaponTags.FirstOrDefault()?.Replace(" ", "")))
+            {
+                button.SetUnlockWeaponDetails(weaponUpgrade);
+                return;
+            }
+        }
+
+        // Otherwise, regular upgrade
+        button.SetUpgradeDetails(upgrade, displayLevel);
     }
+    private bool IsWeaponUnlocked(string weaponTag)
+    {
+        if (cachedSaveData == null)
+            cachedSaveData = SaveManager.Load();
+
+        if (weaponTag == "KingBible")
+            return cachedSaveData.unlockedCharacters.Contains("B");
+        if (weaponTag == "GarlicAura")
+            return cachedSaveData.unlockedCharacters.Contains("C");
+        if (weaponTag == "MagicWand")
+            return true;
+
+        return false;
+    }
+
+
 
     public void ApplyUpgrade(UpgradeSO selectedUpgrade)
     {
@@ -250,17 +320,40 @@ public class UpgradeManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[UpgradeManager] Applying upgrade: {selectedUpgrade.upgradeName} (Level {selectedUpgrade.GetCurrentLevel()})");
+        bool unlockedWeapon = false; // <--- track whether we just unlocked a weapon
 
-        if (selectedUpgrade is PassiveUpgradeSO passive)
+        if (selectedUpgrade is WeaponUpgradeSO weaponSO)
         {
-            passive.ApplyUpgrade(PlayerStats.Instance);
-            RefreshActiveWeaponsFromStats();
-            PassiveUpgradesHUD.Instance?.RegisterPassiveUpgrade(passive.upgradeName, passive.icon, selectedUpgrade.GetCurrentLevel());
+            if (!weaponSO.IsMaxLevel())
+            {
+                if (weaponSO.GetCurrentLevel() == 0)
+                {
+                    // Unlock weapon without applying any stat bonuses yet
+                    EnableWeaponForUpgrade(weaponSO);
+                    weaponSO.SetCurrentLevel(1); // Set to Level 1 after unlocking
+                    Debug.Log($"[UpgradeManager] Unlocked Weapon: {weaponSO.upgradeName} at Level 1 (no bonus applied yet)");
+                    unlockedWeapon = true; // <--- mark that it was just unlocked
+                }
+                else
+                {
+                    // Normal level-up: apply stat bonus
+                    weaponSO.SetCurrentLevel(weaponSO.GetCurrentLevel() + 1);
+                    weaponSO.ApplyLevelUpEffect();
+                    Debug.Log($"[UpgradeManager] Applied Weapon Upgrade: {weaponSO.upgradeName} (New Level {weaponSO.GetCurrentLevel()})");
+                }
+            }
         }
-        else if (selectedUpgrade is WeaponUpgradeSO weaponUpgrade)
+        else if (selectedUpgrade is PassiveUpgradeSO passiveSO)
         {
-            ApplyWeaponUpgrade(weaponUpgrade);
+            if (!passiveSO.IsMaxLevel())
+            {
+                passiveSO.ApplyLevelUpEffect();
+                Debug.Log($"[UpgradeManager] Applied Passive Upgrade: {passiveSO.upgradeName} (New Level {passiveSO.GetCurrentLevel()})");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[UpgradeManager] Unknown upgrade type: {selectedUpgrade.upgradeName}");
         }
 
         if (!pickedUpgrades.Any(p => p.upgrade == selectedUpgrade))
@@ -275,7 +368,13 @@ public class UpgradeManager : MonoBehaviour
         if (IsUpgradeMaxed(selectedUpgrade))
         {
             availableUpgrades = availableUpgrades.Where(u => u != selectedUpgrade).ToArray();
-            Debug.Log($"[UpgradeManager] {selectedUpgrade.upgradeName} reached max level and was removed.");
+            Debug.Log($"[UpgradeManager] {selectedUpgrade.upgradeName} reached max level and was removed from the pool.");
+        }
+
+        // ONLY refresh weapon stats if it was NOT a new unlock
+        if (!unlockedWeapon && selectedUpgrade is WeaponUpgradeSO weaponUpgradeRefresh)
+        {
+            RefreshWeaponsMatchingUpgrade(weaponUpgradeRefresh);
         }
 
         if (PlayerExperience.Instance != null)
@@ -295,12 +394,60 @@ public class UpgradeManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[UpgradeManager] PlayerExperience instance missing! Can't apply upgrade properly.");
+            Debug.LogError("[UpgradeManager] PlayerExperience instance missing! Cannot continue properly.");
+        }
+    }
+
+    private void RefreshWeaponsMatchingUpgrade(WeaponUpgradeSO weaponUpgrade)
+    {
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null)
+            return;
+
+        var weapons = playerObject.GetComponentsInChildren<Weapon>(true);
+
+        foreach (var weapon in weapons)
+        {
+            if (weapon == null || weapon.weaponData == null)
+                continue;
+
+            // Skip if not active yet
+            if (!weapon.gameObject.activeInHierarchy)
+                continue;
+
+            string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
+
+            if (weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag))
+            {
+                RefreshWeaponUpgradesOnWeapon(weapon);
+            }
         }
     }
 
 
+    private void EnableWeaponForUpgrade(WeaponUpgradeSO weaponUpgrade)
+    {
+        GameObject playerObject = GameObject.FindWithTag("Player");
+        if (playerObject == null) return;
 
+        var weapons = playerObject.GetComponentsInChildren<Weapon>(true);
+
+        foreach (var weapon in weapons)
+        {
+            if (weapon == null || weapon.weaponData == null)
+                continue;
+
+            string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
+
+            if (weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag))
+            {
+                weapon.gameObject.SetActive(true);
+                RefreshWeaponUpgradesOnWeapon(weapon);
+                weapon.RefreshWeaponStats();
+                Debug.Log($"[UpgradeManager] Enabled weapon {weapon.name} for {weaponUpgrade.upgradeName} Level 1!");
+            }
+        }
+    }
 
     private void RefreshActiveWeaponsFromStats()
     {
@@ -311,78 +458,8 @@ public class UpgradeManager : MonoBehaviour
         var upgradeables = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
 
         foreach (var weapon in upgradeables)
-        {
-            if (weapon is Weapon weaponComponent)
-            {
-                if (weaponComponent.gameObject.activeSelf) // Only active weapons
-                {
-                    weapon.RefreshWeaponStats();
-                }
-            }
-        }
+            weapon.RefreshWeaponStats();
     }
-
-
-    private void ApplyWeaponUpgrade(WeaponUpgradeSO weaponUpgrade)
-    {
-        GameObject playerObject = GameObject.FindWithTag("Player");
-        if (playerObject == null)
-            return;
-
-        var upgradeables = playerObject.GetComponentsInChildren<Weapon>(true);
-        bool foundCompatibleWeapon = false;
-
-        foreach (var weapon in upgradeables)
-        {
-            if (weapon == null || weapon.weaponData == null)
-                continue;
-
-            string weaponTag = weapon.weaponData.wepName.Replace(" ", "");
-
-            bool compatible = weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == weaponTag);
-
-            if (compatible && IsWeaponUnlocked(weaponTag))
-            {
-                foundCompatibleWeapon = true;
-
-                if (!weapon.gameObject.activeSelf)
-                {
-                    if (weaponUpgrade.isWeaponSummonUpgrade)
-                    {
-                        Debug.Log($"[UpgradeManager] Summoning and activating new weapon: {weapon.weaponData.wepName}");
-                        weapon.gameObject.SetActive(true);
-
-                        if (weapon is IWeaponUpgradeable weaponUpgradable)
-                        {
-                            weaponUpgrade.ApplyUpgrade(weaponUpgradable);
-                            weaponUpgradable.RefreshWeaponStats();
-                            weaponUpgradable.ReinitializeWeaponAfterUpgrade();
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[UpgradeManager] {weaponUpgrade.upgradeName} applies to {weapon.weaponData.wepName}, but weapon is inactive and not summonable. Skipping.");
-                    }
-                }
-                else
-                {
-                    if (weapon is IWeaponUpgradeable weaponUpgradable)
-                    {
-                        weaponUpgrade.ApplyUpgrade(weaponUpgradable);
-                        weaponUpgradable.RefreshWeaponStats();
-                        weaponUpgradable.ReinitializeWeaponAfterUpgrade();
-                    }
-                }
-            }
-        }
-
-        if (!foundCompatibleWeapon)
-        {
-            Debug.LogWarning($"[UpgradeManager] No compatible weapon found for upgrade {weaponUpgrade.upgradeName}. Skipping upgrade application.");
-        }
-    }
-
-
 
     private bool AreAllUpgradesMaxed()
     {
@@ -395,26 +472,23 @@ public class UpgradeManager : MonoBehaviour
             return false;
 
         if (upgrade is WeaponUpgradeSO weaponUpgrade)
-            {
-                 return CheckWeaponTags(weaponUpgrade.compatibleWeaponTags, requireActive: true);
-            }
+        {
+            return CheckWeaponTags(weaponUpgrade.compatibleWeaponTags, requireActive: true);
+        }
         else if (upgrade is PassiveUpgradeSO passiveUpgrade)
         {
             if (passiveUpgrade.compatibleWeaponTags != null && passiveUpgrade.compatibleWeaponTags.Count > 0)
             {
-                // For passive upgrades, require that at least one compatible weapon is currently ACTIVE
                 return CheckWeaponTags(passiveUpgrade.compatibleWeaponTags, requireActive: true);
             }
             else
             {
-                // Passive upgrades with no weapon restrictions are always valid
                 return true;
             }
         }
 
         return true;
     }
-
 
     private bool CheckWeaponTags(List<string> tags, bool requireActive)
     {
@@ -441,13 +515,11 @@ public class UpgradeManager : MonoBehaviour
             {
                 if (requireActive)
                 {
-                    // ONLY care about active weapons if requireActive is true
-                    if (isActive)
+                    if (isActive || isUnlocked)
                         return true;
                 }
                 else
                 {
-                    // Otherwise, allow unlocked weapons
                     if (isUnlocked)
                         return true;
                 }
@@ -457,26 +529,6 @@ public class UpgradeManager : MonoBehaviour
         return false;
     }
 
-
-
-    private bool IsWeaponUnlocked(string weaponTag)
-    {
-        // Example - Customize based on your SaveManager or unlock system
-        SaveData data = SaveManager.Load();
-
-        if (weaponTag == "KingBible")
-            return data.unlockedCharacters.Contains("B");
-        if (weaponTag == "GarlicAura")
-            return data.unlockedCharacters.Contains("C");
-        // MagicWand (Character A) is unlocked by default, you could allow by default
-        if (weaponTag == "MagicWand")
-            return true;
-
-        return false;
-    }
-
-
-
     private bool IsUpgradeMaxed(UpgradeSO upgrade)
     {
         return upgrade != null && upgrade.IsMaxLevel();
@@ -485,19 +537,6 @@ public class UpgradeManager : MonoBehaviour
     public List<PickedUpgrade> GetPickedUpgrades()
     {
         return pickedUpgrades;
-    }
-
-
-    private void RefreshAllWeaponsFromStats()
-    {
-        GameObject playerObject = GameObject.FindWithTag("Player");
-        if (playerObject == null)
-            return;
-
-        var upgradeables = playerObject.GetComponentsInChildren<IWeaponUpgradeable>(true);
-
-        foreach (var weapon in upgradeables)
-            weapon.RefreshWeaponStats();
     }
 
     private void CloseUpgradeMenu()
@@ -520,6 +559,7 @@ public class UpgradeManager : MonoBehaviour
             upgrade.ResetUpgradeLevel();
         }
     }
+
     public int GetCurrentUpgradeLevel(UpgradeSO upgrade)
     {
         if (upgrade == null)

@@ -395,5 +395,9 @@ public class GameManager : MonoBehaviour
                 if (magicWand != null) magicWand.gameObject.SetActive(true);
                 break;
         }
+
+        // AFTER setting the active weapon, refresh upgrades manually
+        UpgradeManager.Instance?.InitializeStartingWeaponLevels();
     }
+
 }

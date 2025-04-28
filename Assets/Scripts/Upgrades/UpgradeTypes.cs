@@ -17,10 +17,10 @@ public class UpgradeTypes : MonoBehaviour
         Revival = 1 << 8,
         Greed = 1 << 9,
         Amount = 1 << 10,
-        Area = 1 << 11,          
-        Cooldown = 1 << 12,      
-        Duration = 1 << 13,       
-        ProjectileSpeed = 1 << 14 
+        Area = 1 << 11,
+        Cooldown = 1 << 12,
+        Duration = 1 << 13,
+        ProjectileSpeed = 1 << 14
     }
 
     [System.Flags]

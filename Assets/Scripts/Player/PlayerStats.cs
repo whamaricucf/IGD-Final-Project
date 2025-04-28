@@ -163,6 +163,9 @@ public class PlayerStats : MonoBehaviour
         OnStatsChanged?.Invoke();
     }
 
+    public int AmountBonus => Mathf.RoundToInt(amount);
+
+
     public void ResetStats()
     {
         healthLevel = damageLevel = speedLevel = luckLevel = regenLevel = areaLevel = projSpdLevel = 0;
