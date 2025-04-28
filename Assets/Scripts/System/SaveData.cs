@@ -1,21 +1,29 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+
+[System.Serializable]
+public class KeyValue
+{
+    public string key;
+    public int value;
+}
 
 [System.Serializable]
 public class SaveData
 {
     public int totalCoins;
-    public Dictionary<string, int> playerUpgrades = new Dictionary<string, int>();
-    public Dictionary<string, int> enemiesDefeated = new Dictionary<string, int>();
-    public HashSet<string> unlockedCharacters = new HashSet<string>();
-    public Dictionary<string, int> highestLevelReached = new Dictionary<string, int>();
+    public List<KeyValue> playerUpgrades = new List<KeyValue>();
+    public List<KeyValue> enemiesDefeated = new List<KeyValue>();
+    public List<KeyValue> highestLevelReached = new List<KeyValue>();
+    public List<string> unlockedCharacters = new List<string>();
 
     public SaveData()
     {
         totalCoins = 0;
-        enemiesDefeated = new Dictionary<string, int>();
-        unlockedCharacters = new HashSet<string>();
-        playerUpgrades = new Dictionary<string, int>();
+        playerUpgrades = new List<KeyValue>();
+        enemiesDefeated = new List<KeyValue>();
+        highestLevelReached = new List<KeyValue>();
+        unlockedCharacters = new List<string>();
     }
 }

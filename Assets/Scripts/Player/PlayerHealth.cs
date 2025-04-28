@@ -139,7 +139,7 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    private void UpdateUI()
+    public void UpdateUI()
     {
         if (healthBar != null)
         {

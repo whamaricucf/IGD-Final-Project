@@ -68,13 +68,14 @@ public class EnemySpiderAI : BaseEnemyAI, IDamageable
         }
     }
 
-    public override void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
+    public override void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti, bool disableAgent)
     {
-        base.TakeDamage(dmg, knockback, sourcePos, critChance, critMulti);
+        base.TakeDamage(dmg, knockback, sourcePos, critChance, critMulti, disableAgent);
 
         if (runtimeData.health <= 0)
         {
             OnEnemyDied?.Invoke();
         }
     }
+
 }

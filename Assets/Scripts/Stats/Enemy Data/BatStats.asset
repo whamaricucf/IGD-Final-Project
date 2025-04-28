@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BatStats
   m_EditorClassIdentifier: 
   speed: 2
-  health: 50
+  health: 20
   power: 15
   knockback: 10
-  experience: 10
+  experience: 15

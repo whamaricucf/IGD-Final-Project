@@ -77,7 +77,7 @@ public class KingBibleProjectile : MonoBehaviour
 
         if (other.TryGetComponent(out IDamageable target))
         {
-            target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMultiplier);
+            target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMultiplier, true);
         }
     }
 }

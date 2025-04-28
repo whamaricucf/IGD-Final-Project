@@ -10,32 +10,34 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af846323c3d2b2a4298ac6cac2b8a4f5, type: 3}
-  m_Name: Greed
+  m_Name: Speed
   m_EditorClassIdentifier: 
-  upgradeName: Greed
+  upgradeName: Speed
   icon: {fileID: 0}
   upgradeDescriptions: []
-  weight: 80
+  weight: 100
   maxLevel: 5
   upgradeLevels:
-  - upgradeType: 512
+  - upgradeType: 16384
     upgradeAmount: 10
     isPercentageBased: 1
-    description: Gain 10% more coins.
-  - upgradeType: 512
+    description: ProjectileSpeed +10%
+  - upgradeType: 16384
     upgradeAmount: 10
     isPercentageBased: 1
-    description: Gain 10% more coins.
-  - upgradeType: 512
+    description: ProjectileSpeed +10%
+  - upgradeType: 16384
     upgradeAmount: 10
     isPercentageBased: 1
-    description: Gain 10% more coins.
-  - upgradeType: 512
+    description: ProjectileSpeed +10%
+  - upgradeType: 16384
     upgradeAmount: 10
     isPercentageBased: 1
-    description: Gain 10% more coins.
-  - upgradeType: 512
+    description: ProjectileSpeed +10%
+  - upgradeType: 16384
     upgradeAmount: 10
     isPercentageBased: 1
-    description: Gain 10% more coins.
-  compatibleWeaponTags: []
+    description: ProjectileSpeed +10%
+  compatibleWeaponTags:
+  - MagicWand
+  - KingBible

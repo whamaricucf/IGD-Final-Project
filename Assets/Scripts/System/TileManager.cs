@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,12 +21,29 @@ public class TileManager : MonoBehaviour
 
     private void Start()
     {
+        StartCoroutine(WaitForPlayer());
+    }
+
+    private IEnumerator WaitForPlayer()
+    {
+        while (player == null)
+        {
+            GameObject foundPlayer = GameObject.FindWithTag("Player");
+            if (foundPlayer != null)
+                player = foundPlayer.transform;
+            else
+                yield return null; // wait one frame
+        }
+
         currentPlayerTile = GetTileCoord(player.position);
         UpdateTiles(forceRefresh: true);
     }
 
     private void Update()
     {
+        if (player == null)
+            return; // player destroyed? Skip safely
+
         Vector2Int newPlayerTile = GetTileCoord(player.position);
 
         if (newPlayerTile != currentPlayerTile)
@@ -76,6 +94,8 @@ public class TileManager : MonoBehaviour
                 if (!activeTiles.ContainsKey(tileCoord))
                 {
                     GameObject tile = GetTileFromPool();
+                    if (tile == null) continue; // 🛡️ fail-safe
+
                     tile.transform.position = new Vector3(tileCoord.x * tileSize, 0, tileCoord.y * tileSize);
                     tile.SetActive(true);
                     activeTiles[tileCoord] = tile;
@@ -90,6 +110,7 @@ public class TileManager : MonoBehaviour
             if (!neededTiles.Contains(kvp.Key))
             {
                 GameObject tile = kvp.Value;
+                if (tile == null) continue; // 🛡️ fail-safe
 
                 TileSpawnPoints tsp = tile.GetComponent<TileSpawnPoints>();
                 if (tsp != null) tsp.ClearEnemies();
@@ -116,8 +137,33 @@ public class TileManager : MonoBehaviour
         }
         else
         {
+            if (tilePrefabs.Count == 0)
+            {
+                Debug.LogError("[TileManager] No tile prefabs assigned!");
+                return null;
+            }
             int index = Random.Range(0, tilePrefabs.Count);
             return Instantiate(tilePrefabs[index]);
         }
+    }
+
+    // 🌟 ADD THIS METHOD for clean unloading/reset
+    public void ClearAllTiles()
+    {
+        foreach (var kvp in activeTiles)
+        {
+            if (kvp.Value != null)
+                Destroy(kvp.Value);
+        }
+        activeTiles.Clear();
+
+        while (tilePool.Count > 0)
+        {
+            GameObject pooledTile = tilePool.Dequeue();
+            if (pooledTile != null)
+                Destroy(pooledTile);
+        }
+
+        Debug.Log("[TileManager] Cleared all tiles and pools.");
     }
 }

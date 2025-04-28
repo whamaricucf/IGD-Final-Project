@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface IDamageable
 {
-    void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti);
+    void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti, bool disableAgent);
 }

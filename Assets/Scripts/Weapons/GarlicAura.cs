@@ -10,15 +10,22 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
 
     private void OnEnable()
     {
-        if (garlicVisual == null)
-            garlicVisual = transform.Find("GarlicVisual");
+        if (weaponData != null)
+        {
+            weaponData = Instantiate(weaponData); // Fresh clone
+            ApplyWeaponData(); // Apply base stats
+            weaponType = weaponData.wepName;
+        }
 
-        RefreshWeaponStats();
-        StartAura();
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
+
+        RefreshWeaponStats(); // Refresh final stats
+        StartAura(); // Start aura damaging enemies
 
         if (PlayerStats.Instance != null)
             PlayerStats.Instance.OnStatsChanged += RefreshAuraVisual;
     }
+
 
     private void OnDisable()
     {
@@ -49,7 +56,8 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
             {
                 if (hit.TryGetComponent(out IDamageable target))
                 {
-                    target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMulti);
+                    // For Garlic: disableAgent = false
+                    target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMulti, false);
                 }
             }
 

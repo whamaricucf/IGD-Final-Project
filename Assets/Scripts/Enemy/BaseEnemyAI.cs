@@ -11,6 +11,9 @@ public abstract class BaseEnemyAI : MonoBehaviour
     public Transform player;
 
     private Rigidbody rb;
+    protected bool needsDestinationReset = false;
+    protected bool recentlyBounced = false;
+
 
     protected virtual void Start()
     {
@@ -18,24 +21,17 @@ public abstract class BaseEnemyAI : MonoBehaviour
         rb = GetComponent<Rigidbody>();
 
         if (agent == null)
-        {
             Debug.LogError($"{name}: Missing NavMeshAgent!");
-        }
 
         if (player == null)
         {
             player = GameObject.FindWithTag("Player")?.transform;
-            Debug.Log($"Player assigned: {player != null}");
             if (player == null)
-            {
                 Debug.LogError($"{name}: Player reference is not assigned!");
-            }
         }
 
         if (rb != null)
-        {
             rb.isKinematic = true;
-        }
 
         StartCoroutine(PlaceEnemyOnNavMesh());
         InitializeRuntimeData();
@@ -49,26 +45,18 @@ public abstract class BaseEnemyAI : MonoBehaviour
         if (agent != null && !agent.isOnNavMesh)
         {
             if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            {
                 transform.position = hit.position;
-            }
             else
-            {
                 Debug.LogWarning($"{name}: Failed to find valid NavMesh position for spawn.");
-            }
         }
 
         if (rb != null)
-        {
             rb.isKinematic = false;
-        }
 
         agent.enabled = true;
 
         if (player != null)
-        {
             agent.SetDestination(player.position);
-        }
     }
 
     protected virtual void InitializeRuntimeData()
@@ -98,9 +86,7 @@ public abstract class BaseEnemyAI : MonoBehaviour
     {
         GameObject gem = ObjectPooler.Instance.SpawnFromPool("Gem", transform.position, Quaternion.identity);
         if (gem.TryGetComponent(out GemPickup pickup))
-        {
             pickup.expValue = runtimeData.experience;
-        }
     }
 
     protected virtual void Die()
@@ -113,83 +99,15 @@ public abstract class BaseEnemyAI : MonoBehaviour
             ObjectPooler.Instance.ReturnToPool(poolTag, gameObject);
         }
         else
-        {
-            Destroy(gameObject); // fallback (shouldn't happen)
-        }
+            Destroy(gameObject);
     }
 
     protected virtual string GetEnemyPoolTag()
     {
-        // Default guesses based on type. You can improve this if you want per-enemy customization.
         if (GetComponent<EnemyGhostAI>() != null) return "Ghost";
         if (GetComponent<EnemyBatAI>() != null) return "Bat";
         if (GetComponent<EnemySpiderAI>() != null) return "Spider";
-        return "Enemy"; // fallback
-    }
-
-
-    protected IEnumerator TemporarilyDisableAgent(NavMeshAgent agent)
-    {
-        agent.enabled = false;
-
-        yield return new WaitForSeconds(0.3f);
-
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.velocity = Vector3.zero;
-        }
-
-        agent.enabled = true;
-
-        if (!agent.isOnNavMesh)
-        {
-            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
-            {
-                transform.position = hit.position;
-            }
-            else
-            {
-                Debug.LogWarning($"{name} failed to reposition to NavMesh!");
-            }
-        }
-
-        yield return null;
-
-        if (agent.isOnNavMesh)
-        {
-            if (player != null)
-                agent.SetDestination(player.position);
-        }
-    }
-
-    protected virtual void InitializeEnemy()
-    {
-        if (agent != null)
-        {
-            agent.enabled = false;
-            StartCoroutine(StartAgentAfterDelay(agent, 0.5f));
-        }
-
-        if (player == null)
-        {
-            Debug.LogWarning("BaseEnemyAI: Player reference is not assigned!");
-        }
-    }
-
-    private IEnumerator StartAgentAfterDelay(NavMeshAgent agent, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        agent.enabled = true;
-
-        if (player != null)
-        {
-            agent.SetDestination(player.position);
-        }
-        else
-        {
-            Debug.LogError("BaseEnemyAI: Player is still not assigned after delay.");
-        }
+        return "Enemy";
     }
 
     protected void ApplyKnockback(Vector3 sourcePos, float knockback)
@@ -199,23 +117,49 @@ public abstract class BaseEnemyAI : MonoBehaviour
         {
             Vector3 direction = (transform.position - sourcePos).normalized;
             direction.y = 0f;
+            rb.velocity = Vector3.zero;
             rb.AddForce(direction * knockback, ForceMode.Impulse);
         }
+
+        recentlyBounced = true;
+        StartCoroutine(RecoverAfterKnockback());
     }
 
-    protected void ApplyBounceBack(Transform fromTarget)
+    protected IEnumerator RecoverAfterKnockback()
     {
         Rigidbody rb = GetComponent<Rigidbody>();
+        float timer = 0f;
+
+        // Wait until slow enough or timeout
+        while (rb != null && rb.velocity.magnitude > 0.1f && timer < 0.4f)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
         if (rb != null)
         {
-            Vector3 direction = (transform.position - fromTarget.position).normalized;
-            direction.y = 0f;
-            rb.velocity = Vector3.zero;
-            rb.AddForce(direction * (runtimeData.knockback * 2f), ForceMode.Impulse);
+            rb.velocity = Vector3.zero;         // ✨ hard reset
+            rb.angularVelocity = Vector3.zero;  // ✨ hard reset
+        }
+
+        if (agent != null)
+        {
+            agent.enabled = true;
+
+            if (!agent.isOnNavMesh)
+            {
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                    transform.position = hit.position;
+            }
+
+            needsDestinationReset = true;
+            recentlyBounced = false;
         }
     }
 
-    public virtual void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
+
+    public virtual void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti, bool disableAgent = true)
     {
         if (agent == null || player == null)
         {
@@ -231,30 +175,156 @@ public abstract class BaseEnemyAI : MonoBehaviour
 
         ApplyKnockback(sourcePos, knockback);
 
-        StartCoroutine(TemporarilyDisableAgent(agent));
+        if (disableAgent)
+            StartCoroutine(TemporarilyDisableAgent(agent));
+        else
+            StartCoroutine(TemporarilyDisableAgentBrief(agent));
 
         if (runtimeData.health <= 0)
-        {
             Die();
-        }
     }
-    public void ForcePlaceOnNavMesh()
+
+    protected IEnumerator TemporarilyDisableAgent(NavMeshAgent agent)
     {
-        if (agent == null) agent = GetComponent<NavMeshAgent>();
-        if (agent == null) return;
+        agent.enabled = false;
+
+        yield return new WaitForSeconds(0.3f);
+
+        if (rb != null)
+            rb.velocity = Vector3.zero;
+
+        agent.enabled = true;
 
         if (!agent.isOnNavMesh)
         {
-            // Raise the enemy slightly to let it fall naturally
-            transform.position += new Vector3(0, 2f, 0);
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                transform.position = hit.position;
+        }
 
+        if (player != null)
+            agent.SetDestination(player.position);
+    }
+
+    protected IEnumerator TemporarilyDisableAgentBrief(NavMeshAgent agent)
+    {
+        agent.enabled = false;
+
+        yield return new WaitForSeconds(0.1f);
+
+        agent.enabled = true;
+
+        if (!agent.isOnNavMesh)
+        {
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                transform.position = hit.position;
+        }
+
+        if (player != null)
+            agent.SetDestination(player.position);
+    }
+
+    protected virtual void InitializeEnemy()
+    {
+        if (agent != null)
+        {
+            agent.enabled = false;
+            StartCoroutine(StartAgentAfterDelay(agent, 0.5f));
+        }
+
+        if (player == null)
+            Debug.LogWarning("BaseEnemyAI: Player reference is not assigned!");
+    }
+
+    private IEnumerator StartAgentAfterDelay(NavMeshAgent agent, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        agent.enabled = true;
+
+        if (player != null)
+            agent.SetDestination(player.position);
+    }
+
+    protected virtual void ApplyBounceBack(Transform fromTarget)
+    {
+        if (agent != null)
+            agent.enabled = false;
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            Vector3 direction = (transform.position - fromTarget.position).normalized;
+            direction.y = 0f;
+            rb.isKinematic = false; // Enable physics
+            rb.velocity = Vector3.zero;
+
+            float knockbackForce = runtimeData.knockback * 2f;
+            rb.AddForce(direction * knockbackForce, ForceMode.Impulse);
+        }
+
+        recentlyBounced = true;
+        StartCoroutine(ReenableAgentAfterBounce());
+    }
+
+
+
+    protected virtual IEnumerator ReenableAgentAfterBounce()
+    {
+        Rigidbody rb = GetComponent<Rigidbody>();
+
+        // WAIT to allow bounce physics to apply
+        yield return new WaitForSeconds(0.1f);
+
+        float timer = 0f;
+
+        // THEN wait until slow enough
+        while (rb != null && rb.velocity.magnitude > 0.1f && timer < 0.5f)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true; // Freeze after physics settles
+        }
+
+        if (agent != null)
+        {
+            agent.enabled = true;
+
+            if (!agent.isOnNavMesh)
+            {
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                    transform.position = hit.position;
+            }
+
+            needsDestinationReset = true;
+            recentlyBounced = false;
+        }
+    }
+
+
+    public void ForcePlaceOnNavMesh()
+    {
+        if (agent == null)
+            agent = GetComponent<NavMeshAgent>();
+        if (agent == null)
+            return;
+
+        if (!agent.isOnNavMesh)
+        {
+            transform.position += new Vector3(0, 2f, 0); // Raise slightly
             Rigidbody rb = GetComponent<Rigidbody>();
+
             if (rb != null)
             {
                 rb.isKinematic = false;
+                rb.velocity = Vector3.down * 20f; // Forcefully push enemy down!
             }
 
-            agent.enabled = false; // Disable agent temporarily until it lands
+            agent.enabled = false;
             StartCoroutine(EnableAgentAfterLanding());
         }
     }
@@ -262,24 +332,23 @@ public abstract class BaseEnemyAI : MonoBehaviour
     private IEnumerator EnableAgentAfterLanding()
     {
         Rigidbody rb = GetComponent<Rigidbody>();
+        float timer = 0f;
 
-        // Wait until the Rigidbody basically stops falling
-        while (rb != null && rb.velocity.magnitude > 0.1f)
+        while (rb != null && rb.velocity.magnitude > 0.1f && timer < 0.5f)
         {
+            timer += Time.deltaTime;
             yield return null;
         }
 
-        // Snap to ground if needed
         if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2f, NavMesh.AllAreas))
         {
             transform.position = hit.position;
         }
 
-        // Re-enable agent
-        agent.enabled = true;
+        if (agent != null)
+            agent.enabled = true;
+
         if (player != null)
-        {
             agent.SetDestination(player.position);
-        }
     }
 }

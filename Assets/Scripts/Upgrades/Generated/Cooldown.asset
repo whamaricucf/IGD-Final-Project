@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 519fab4a8cf8f754aa2a491d7890409e, type: 3}
+  m_Script: {fileID: 11500000, guid: af846323c3d2b2a4298ac6cac2b8a4f5, type: 3}
   m_Name: Cooldown
   m_EditorClassIdentifier: 
   upgradeName: Cooldown
@@ -18,32 +18,24 @@ MonoBehaviour:
   weight: 50
   maxLevel: 5
   upgradeLevels:
-  - upgradeTypes: 08000000
-    upgradeAmounts:
-    - 8
-    isPercentageBased: 01
-    description: Reduces cooldown by 8%.
-  - upgradeTypes: 08000000
-    upgradeAmounts:
-    - 8
-    isPercentageBased: 01
-    description: Reduces cooldown by 8%.
-  - upgradeTypes: 08000000
-    upgradeAmounts:
-    - 8
-    isPercentageBased: 01
-    description: Reduces cooldown by 8%.
-  - upgradeTypes: 08000000
-    upgradeAmounts:
-    - 8
-    isPercentageBased: 01
-    description: Reduces cooldown by 8%.
-  - upgradeTypes: 08000000
-    upgradeAmounts:
-    - 8
-    isPercentageBased: 01
-    description: Reduces cooldown by 8%.
-  compatibleWeaponTags:
-  - MagicWand
-  - KingBible
-  - Garlic
+  - upgradeType: 4096
+    upgradeAmount: 8
+    isPercentageBased: 1
+    description: Cooldown +8%
+  - upgradeType: 4096
+    upgradeAmount: 8
+    isPercentageBased: 1
+    description: Cooldown +8%
+  - upgradeType: 4096
+    upgradeAmount: 8
+    isPercentageBased: 1
+    description: Cooldown +8%
+  - upgradeType: 4096
+    upgradeAmount: 8
+    isPercentageBased: 1
+    description: Cooldown +8%
+  - upgradeType: 4096
+    upgradeAmount: 8
+    isPercentageBased: 1
+    description: Cooldown +8%
+  compatibleWeaponTags: []

@@ -13,6 +13,8 @@ public class WeaponUpgradeSO : UpgradeSO
         public bool[] isPercentageBased;
         public string description;
     }
+    [Header("Summon Settings")]
+    public bool isWeaponSummonUpgrade = false;
 
     [Header("Weapon Upgrade Settings")]
     public WeaponUpgradeLevelData[] upgradeLevels;
@@ -87,4 +89,11 @@ public class WeaponUpgradeSO : UpgradeSO
     {
         currentLevel = Mathf.Clamp(level, 0, maxLevel);
     }
+    public void ApplyLevelUpEffect()
+    {
+        // Re-apply whatever you normally do when leveling up
+        // Like adding projectile count, modifying cooldown, etc
+        ApplyUpgrade(FindObjectOfType<PlayerStats>());
+    }
+
 }

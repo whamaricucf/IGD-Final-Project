@@ -62,6 +62,9 @@ public class PlayerController : MonoBehaviour
 
     void HandleMovement()
     {
+        if (Camera.main == null)
+            return; // No camera, don't move
+
         inputMoveX = Input.GetAxis("Horizontal");
         inputMoveY = Input.GetAxis("Vertical");
 
@@ -87,6 +90,7 @@ public class PlayerController : MonoBehaviour
         RotateTowardsMovementDirection();
         ApplyTiltEffect();
     }
+
 
     void RotateTowardsMovementDirection()
     {

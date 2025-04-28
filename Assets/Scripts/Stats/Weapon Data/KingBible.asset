@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: KingBible
   m_EditorClassIdentifier: 
   wepName: King Bible
-  area: 2.5
+  area: 1.5
   spd: 100
-  duration: 5
-  cd: 7
+  duration: 7
+  cd: 5
   projInterval: 0
   hitDelay: 0.4
   knockback: 4
@@ -24,8 +24,21 @@ MonoBehaviour:
   critMulti: 2
   maxLvl: 8
   rarity: 3
-  baseDMG: 8
+  baseDMG: 15
   amount: 1
   pierce: 0
   limit: 8
   wallBlock: 0
+  runtimeArea: 1.5
+  runtimeSpd: 100
+  runtimeDuration: 5
+  runtimeCd: 7
+  runtimeProjInterval: 0
+  runtimeHitDelay: 0.4
+  runtimeKnockback: 4
+  runtimeCritChance: 0.2
+  runtimeCritMulti: 2
+  runtimeBaseDMG: 15
+  runtimeAmount: 1
+  runtimePierce: 0
+  runtimeLimit: 8

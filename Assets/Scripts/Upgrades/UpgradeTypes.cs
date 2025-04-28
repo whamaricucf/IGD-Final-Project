@@ -16,7 +16,11 @@ public class UpgradeTypes : MonoBehaviour
         Growth = 1 << 7,
         Revival = 1 << 8,
         Greed = 1 << 9,
-        Amount = 1 << 10 
+        Amount = 1 << 10,
+        Area = 1 << 11,          
+        Cooldown = 1 << 12,      
+        Duration = 1 << 13,       
+        ProjectileSpeed = 1 << 14 
     }
 
     [System.Flags]
@@ -29,6 +33,6 @@ public class UpgradeTypes : MonoBehaviour
         Cooldown = 1 << 3,
         Duration = 1 << 4,
         Pierce = 1 << 5,
-        Amount = 1 << 6 
+        Amount = 1 << 6
     }
 }

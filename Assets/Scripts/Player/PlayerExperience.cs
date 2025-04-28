@@ -98,4 +98,9 @@ public class PlayerExperience : MonoBehaviour
             }
         }
     }
+
+    public int GetCurrentLevel()
+    {
+        return currentLevel;
+    }
 }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GhostStats
   m_EditorClassIdentifier: 
   speed: 3
-  health: 100
+  health: 50
   power: 10
   knockback: 5
-  experience: 15
+  experience: 25

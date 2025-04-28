@@ -10,9 +10,19 @@ public class KingBible : Weapon, IWeaponUpgradeable
 
     private void OnEnable()
     {
-        RefreshWeaponStats();
-        StartOrbit();
+        if (weaponData != null)
+        {
+            weaponData = Instantiate(weaponData); // Fresh clone
+            ApplyWeaponData(); // Apply base stats
+            weaponType = weaponData.wepName;
+        }
+
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
+
+        RefreshWeaponStats(); // Refresh final stats
+        StartOrbit(); // Start firing behavior
     }
+
 
     private void OnDisable()
     {

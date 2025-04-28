@@ -38,3 +38,4 @@ MonoBehaviour:
     upgradeAmount: 10
     isPercentageBased: 1
     description: Character moves 10% faster.
+  compatibleWeaponTags: []

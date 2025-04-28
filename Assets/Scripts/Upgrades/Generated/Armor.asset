@@ -38,3 +38,4 @@ MonoBehaviour:
     upgradeAmount: 1
     isPercentageBased: 0
     description: Reduces incoming damage by 1.
+  compatibleWeaponTags: []

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SpiderStats
   m_EditorClassIdentifier: 
   speed: 2
-  health: 150
+  health: 80
   power: 5
   knockback: 2
-  experience: 20
+  experience: 30

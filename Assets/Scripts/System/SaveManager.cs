@@ -1,7 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.IO;
+using UnityEngine;
 
 public class SaveManager : MonoBehaviour
 {
@@ -38,7 +37,6 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-
     public static void DeleteSave()
     {
         if (File.Exists(SavePath))
@@ -46,5 +44,27 @@ public class SaveManager : MonoBehaviour
             File.Delete(SavePath);
             Debug.Log("Save file deleted.");
         }
+    }
+
+
+    public static Dictionary<string, int> ConvertListToDict(List<KeyValue> list)
+    {
+        Dictionary<string, int> dict = new Dictionary<string, int>();
+        foreach (var kv in list)
+        {
+            if (!dict.ContainsKey(kv.key))
+                dict.Add(kv.key, kv.value);
+        }
+        return dict;
+    }
+
+    public static List<KeyValue> ConvertDictToList(Dictionary<string, int> dict)
+    {
+        List<KeyValue> list = new List<KeyValue>();
+        foreach (var kv in dict)
+        {
+            list.Add(new KeyValue { key = kv.Key, value = kv.Value });
+        }
+        return list;
     }
 }

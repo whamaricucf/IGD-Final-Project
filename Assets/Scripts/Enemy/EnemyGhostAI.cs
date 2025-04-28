@@ -23,16 +23,25 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
 
     private void Update()
     {
-        if (player == null || !agent.enabled) return;
-
-        if (!isMiniGhost && !hasSplit && runtimeData.health <= splitHealthThreshold)
-        {
-            SplitIntoMiniGhosts();
-            return;
-        }
+        if (player == null || agent == null) return;
+        if (!agent.enabled || recentlyBounced) return;
 
         agent.SetDestination(player.position);
+
+        if (needsDestinationReset)
+        {
+            needsDestinationReset = false;
+        }
     }
+
+
+
+    private void OnEnable()
+    {
+        hasSplit = false;
+        isMiniGhost = false;
+    }
+
 
     private void OnTriggerEnter(Collider other)
     {
@@ -42,10 +51,14 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
             if (playerHealth != null)
             {
                 playerHealth.TakeDamage(runtimeData.power);
+
+                // ✨ Always use ApplyBounceBack, even for mini-ghosts!
                 ApplyBounceBack(other.transform);
             }
         }
     }
+
+
 
     private void OnCollisionStay(Collision collision)
     {
@@ -85,21 +98,31 @@ public class EnemyGhostAI : BaseEnemyAI, IDamageable
 
         runtimeData = ScriptableObject.CreateInstance<EnemyData>();
         runtimeData.speed = 5f + UnityEngine.Random.Range(-0.5f, 0.5f);
-        runtimeData.health = 50 + UnityEngine.Random.Range(-5, 5);
+        runtimeData.health = 15 + UnityEngine.Random.Range(-5, 5);
         runtimeData.power = parentData.power;
         runtimeData.knockback = parentData.knockback;
         runtimeData.experience = Mathf.CeilToInt(parentData.experience / 3f);
 
         agent = GetComponent<NavMeshAgent>();
         agent.speed = runtimeData.speed;
+
+        if (player != null)
+            agent.SetDestination(player.position);
     }
 
-    public override void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti)
-    {
-        base.TakeDamage(dmg, knockback, sourcePos, critChance, critMulti);
 
-        if (runtimeData.health <= 0)
+    public override void TakeDamage(int dmg, float knockback, Vector3 sourcePos, float critChance, float critMulti, bool disableAgent)
+    {
+        base.TakeDamage(dmg, knockback, sourcePos, critChance, critMulti, disableAgent);
+
+        if (!hasSplit && !isMiniGhost && runtimeData.health <= splitHealthThreshold && runtimeData.health > 0)
         {
+            // Split into mini-ghosts instead of dying
+            SplitIntoMiniGhosts();
+        }
+        else if (runtimeData.health <= 0)
+        {
+            // Only truly die if health is <= 0 after damage and no split
             OnEnemyDied?.Invoke();
         }
     }

@@ -21,6 +21,8 @@ public class CharacterCardUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI weaponNameText;
 
+    public static SaveData cachedSaveData;
+
     private void Start()
     {
         ApplyData();
@@ -28,8 +30,9 @@ public class CharacterCardUI : MonoBehaviour
 
     public void ApplyData()
     {
-        SaveData save = SaveManager.Load();
-        bool isUnlocked = characterID == "A" || save.unlockedCharacters.Contains(characterID);
+        cachedSaveData = SaveManager.Load(); // Always reload fresh
+
+        bool isUnlocked = characterID == "A" || cachedSaveData.unlockedCharacters.Contains(characterID);
 
         lockOverlay.SetActive(!isUnlocked);
         lockIcon.SetActive(!isUnlocked);
@@ -45,6 +48,9 @@ public class CharacterCardUI : MonoBehaviour
         nameText.color = isUnlocked ? Color.white : Color.gray;
         weaponNameText.color = isUnlocked ? Color.white : Color.gray;
     }
+
+
+
 
     public void OnCharacterSelect()
     {

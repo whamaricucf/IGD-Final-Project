@@ -38,3 +38,4 @@ MonoBehaviour:
     upgradeAmount: 0.2
     isPercentageBased: 0
     description: Restores 0.2 health per second.
+  compatibleWeaponTags: []

@@ -17,6 +17,7 @@ MonoBehaviour:
   upgradeDescriptions: []
   weight: 100
   maxLevel: 8
+  isWeaponSummonUpgrade: 0
   upgradeLevels:
   - upgradeTypes: 00000000
     upgradeAmounts:

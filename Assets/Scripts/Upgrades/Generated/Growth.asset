@@ -38,3 +38,4 @@ MonoBehaviour:
     upgradeAmount: 8
     isPercentageBased: 1
     description: Gain 8% more experience.
+  compatibleWeaponTags: []

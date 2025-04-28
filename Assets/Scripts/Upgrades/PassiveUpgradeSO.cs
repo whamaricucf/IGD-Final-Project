@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using static UpgradeTypes;
 
 [CreateAssetMenu(fileName = "NewPassiveUpgrade", menuName = "Upgrades/Passive Upgrade")]
@@ -15,6 +16,9 @@ public class PassiveUpgradeSO : UpgradeSO
 
     [Header("Passive Upgrade Settings")]
     public PassiveUpgradeLevelData[] upgradeLevels;
+
+    [Header("Compatible Weapon Tags (optional)")]
+    public List<string> compatibleWeaponTags; // 🔥 New!
 
     private int currentLevel = 0;
 
@@ -33,9 +37,7 @@ public class PassiveUpgradeSO : UpgradeSO
         }
 
         var data = upgradeLevels[currentLevel];
-
         playerStats.ApplyStatUpgrade(ConvertToStatType(data.upgradeType), data.upgradeAmount, data.isPercentageBased);
-
         currentLevel++;
     }
 
@@ -53,14 +55,15 @@ public class PassiveUpgradeSO : UpgradeSO
             PassiveUpgradeType.Growth => PlayerStats.StatType.Growth,
             PassiveUpgradeType.Revival => PlayerStats.StatType.Revival,
             PassiveUpgradeType.Amount => PlayerStats.StatType.Amount,
+            PassiveUpgradeType.Area => PlayerStats.StatType.Area,
+            PassiveUpgradeType.Cooldown => PlayerStats.StatType.Cooldown,
+            PassiveUpgradeType.Duration => PlayerStats.StatType.Duration,
+            PassiveUpgradeType.ProjectileSpeed => PlayerStats.StatType.ProjSpd,
             _ => throw new System.ArgumentOutOfRangeException(nameof(passiveType), passiveType, null),
         };
     }
 
-    public override void ApplyUpgrade(IWeaponUpgradeable weapon)
-    {
-        // Passive upgrades do not apply to weapons.
-    }
+    public override void ApplyUpgrade(IWeaponUpgradeable weapon) { }
 
     public override int GetCurrentLevel() => currentLevel;
 
@@ -75,4 +78,17 @@ public class PassiveUpgradeSO : UpgradeSO
         else
             return "Max level reached!";
     }
+
+    public void SetCurrentLevel(int level)
+    {
+        currentLevel = Mathf.Clamp(level, 0, upgradeLevels.Length);
+    }
+
+    public void ApplyLevelUpEffect()
+    {
+        // Re-apply whatever you normally do when leveling up
+        // Like adding projectile count, modifying cooldown, etc
+        ApplyUpgrade(FindObjectOfType<PlayerStats>());
+    }
+
 }

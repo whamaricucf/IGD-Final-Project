@@ -26,3 +26,4 @@ MonoBehaviour:
     upgradeAmount: 1
     isPercentageBased: 0
     description: Revive with 1 extra life.
+  compatibleWeaponTags: []

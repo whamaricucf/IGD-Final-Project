@@ -10,7 +10,7 @@ public class Weapon : MonoBehaviour
     public float duration;
     public float projInterval;
     public float hitDelay;
-    public float knockback;
+    public float knockback; // ✅
     public float critChance;
     public float critMulti;
     public int maxLvl;
@@ -48,7 +48,11 @@ public class Weapon : MonoBehaviour
             ApplyWeaponData();
             weaponType = weaponData.wepName;
         }
+
+        // AFTER cloning weaponData, tell UpgradeManager to reapply bonuses
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this);
     }
+
 
     public virtual void ApplyWeaponData()
     {
@@ -88,8 +92,9 @@ public class Weapon : MonoBehaviour
         duration = baseDuration * PlayerStats.Instance.duration;
         critChance = baseCritChance + (PlayerStats.Instance.luck * 0.01f);
 
+        knockback = baseKnockback;
+
         amount = baseAmount + weaponAmountBonus + PlayerStats.Instance.amount;
         pierce = basePierce; // (optional — if you want pierce upgrades, add here)
-        limit = baseLimit;   // (optional — if you want limit upgrades, add here)
     }
 }

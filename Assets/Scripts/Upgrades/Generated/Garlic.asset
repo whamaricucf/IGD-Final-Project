@@ -17,6 +17,7 @@ MonoBehaviour:
   upgradeDescriptions: []
   weight: 90
   maxLevel: 8
+  isWeaponSummonUpgrade: 0
   upgradeLevels:
   - upgradeTypes: 00000000
     upgradeAmounts:
@@ -66,4 +67,4 @@ MonoBehaviour:
     isPercentageBased: 0100
     description: Area +20%, Damage +1.
   compatibleWeaponTags:
-  - Garlic
+  - GarlicAura

@@ -9,9 +9,28 @@ public class MagicWand : Weapon, IWeaponUpgradeable
 
     private void OnEnable()
     {
-        RefreshWeaponStats();
-        StartAttacking();
+        if (weaponData != null)
+        {
+            weaponData = Instantiate(weaponData); // Fresh clone
+            ApplyWeaponData(); // Initialize base stats
+        }
+
+        // Assign firePoint = Player
+        if (firePoint == null)
+        {
+            GameObject player = GameObject.FindWithTag("Player");
+            if (player != null)
+                firePoint = player.transform;
+            else
+                Debug.LogWarning("[MagicWand] Player not found! FirePoint cannot be assigned.");
+        }
+
+        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply any active upgrades
+        RefreshWeaponStats(); // Refresh live stats
+        StartAttacking(); // Begin firing
     }
+
+
 
     private void OnDisable()
     {
@@ -40,12 +59,15 @@ public class MagicWand : Weapon, IWeaponUpgradeable
             if (target != null)
             {
                 int totalProjectiles = Mathf.Max(1, amount);
+                float maxArc = 3f; // Max arc spread in degrees
+                float arcStep = totalProjectiles > 1 ? maxArc / (totalProjectiles - 1) : 0f;
+                float startingAngle = -maxArc / 2f;
 
                 for (int i = 0; i < totalProjectiles; i++)
                 {
-                    SpawnProjectile();
+                    float angleOffset = startingAngle + arcStep * i;
+                    SpawnProjectile(angleOffset);
 
-                    // Only wait projInterval if more projectiles are coming
                     if (i < totalProjectiles - 1)
                         yield return new WaitForSeconds(projInterval);
                 }
@@ -55,7 +77,8 @@ public class MagicWand : Weapon, IWeaponUpgradeable
         }
     }
 
-    private void SpawnProjectile()
+
+    private void SpawnProjectile(float angleOffset)
     {
         if (firePoint == null) return;
 
@@ -64,22 +87,35 @@ public class MagicWand : Weapon, IWeaponUpgradeable
         if (proj.TryGetComponent(out MagicWandProjectile projectile))
         {
             Vector3 shootDir = GetShootDirection();
+
+            // Apply small rotation
+            shootDir = Quaternion.Euler(0, angleOffset, 0) * shootDir;
+
             projectile.Launch(shootDir, speed, damage, pierce, knockback, critChance, critMulti);
         }
     }
+
 
     private Vector3 GetShootDirection()
     {
         GameObject target = FindClosestEnemy();
         if (target != null)
         {
-            return (target.transform.position - firePoint.position).normalized;
+            Vector3 targetPoint = target.transform.position;
+
+            if (target.TryGetComponent(out Collider targetCollider))
+            {
+                targetPoint = targetCollider.bounds.center;
+            }
+
+            return (targetPoint - firePoint.position).normalized;
         }
         else
         {
             return firePoint.forward;
         }
     }
+
 
     private GameObject FindClosestEnemy()
     {

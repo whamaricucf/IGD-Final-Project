@@ -38,3 +38,4 @@ MonoBehaviour:
     upgradeAmount: 20
     isPercentageBased: 1
     description: Augments max health by 20%.
+  compatibleWeaponTags: []

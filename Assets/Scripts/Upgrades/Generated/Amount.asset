@@ -16,7 +16,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   upgradeDescriptions: []
   weight: 80
-  maxLevel: 2
+  maxLevel: 5
   upgradeLevels:
   - upgradeType: 1024
     upgradeAmount: 1
@@ -26,3 +26,18 @@ MonoBehaviour:
     upgradeAmount: 1
     isPercentageBased: 0
     description: Fires 1 additional projectiles.
+  - upgradeType: 1024
+    upgradeAmount: 1
+    isPercentageBased: 0
+    description: Fires 1 additional projectiles.
+  - upgradeType: 1024
+    upgradeAmount: 1
+    isPercentageBased: 0
+    description: Fires 1 additional projectiles.
+  - upgradeType: 1024
+    upgradeAmount: 1
+    isPercentageBased: 0
+    description: Fires 1 additional projectiles.
+  compatibleWeaponTags:
+  - MagicWand
+  - KingBible

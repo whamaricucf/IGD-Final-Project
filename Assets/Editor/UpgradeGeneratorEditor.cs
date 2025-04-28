@@ -15,7 +15,6 @@ public class UpgradeGeneratorEditor : EditorWindow
             Directory.CreateDirectory(upgradePath);
 
         GeneratePassiveUpgrades(upgradePath);
-        GenerateWeaponStatUpgrades(upgradePath);
         GenerateWeaponUpgrades(upgradePath);
 
         AssetDatabase.SaveAssets();
@@ -37,16 +36,11 @@ public class UpgradeGeneratorEditor : EditorWindow
         CreatePassiveUpgrade(path, "Greed", PassiveUpgradeType.Greed, 5, 80, 10, true);
         CreatePassiveUpgrade(path, "Revival", PassiveUpgradeType.Revival, 2, 40, 1, false);
         CreatePassiveUpgrade(path, "Amount", PassiveUpgradeType.Amount, 5, 80, 1, false);
-    }
+        CreatePassiveUpgrade(path, "Area", PassiveUpgradeType.Area, 5, 100, 10, true);
+        CreatePassiveUpgrade(path, "Cooldown", PassiveUpgradeType.Cooldown, 5, 50, 8, true);
+        CreatePassiveUpgrade(path, "Duration", PassiveUpgradeType.Duration, 5, 100, 10, true);
+        CreatePassiveUpgrade(path, "Speed", PassiveUpgradeType.ProjectileSpeed, 5, 100, 10, true);
 
-
-    private static void GenerateWeaponStatUpgrades(string path)
-    {
-        CreateWeaponStatUpgrade(path, "Cooldown", WeaponUpgradeType.Cooldown, 5, 50, 8, true);
-        CreateWeaponStatUpgrade(path, "Area", WeaponUpgradeType.Area, 5, 100, 10, true);
-        CreateWeaponStatUpgrade(path, "ProjectileSpeed", WeaponUpgradeType.Speed, 5, 100, 10, true);
-        CreateWeaponStatUpgrade(path, "Duration", WeaponUpgradeType.Duration, 5, 100, 10, true);
-        // No general "Amount" upgrade here!
     }
 
     private static void CreatePassiveUpgrade(string path, string name, PassiveUpgradeType type, int maxLevel, float weight, float amount, bool isPercentage)
