@@ -92,7 +92,7 @@ public abstract class BaseEnemyAI : MonoBehaviour
     protected virtual void Die()
     {
         DropExpGem();
-
+        AudioManager.Instance.PlayEnemyDeath();
         if (TryGetComponent<BaseEnemyAI>(out var enemy))
         {
             string poolTag = GetEnemyPoolTag();

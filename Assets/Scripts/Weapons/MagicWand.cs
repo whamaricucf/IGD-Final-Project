@@ -58,7 +58,7 @@ public class MagicWand : Weapon, IWeaponUpgradeable
                 {
                     float angleOffset = startingAngle + arcStep * i;
                     SpawnProjectile(angleOffset);
-
+                    AudioManager.Instance.PlayWandFire();
                     if (i < totalProjectiles - 1)
                         yield return new WaitForSeconds(projInterval);
                 }

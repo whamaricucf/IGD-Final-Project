@@ -18,6 +18,7 @@ TagManager:
   - HealthBar
   - ExpBar
   - ExpText
+  - GarlicAura
   layers:
   - Default
   - TransparentFX

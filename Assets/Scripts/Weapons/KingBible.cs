@@ -43,6 +43,7 @@ public class KingBible : Weapon, IWeaponUpgradeable
             StopCoroutine(orbitCoroutine);
 
         orbitCoroutine = StartCoroutine(OrbitBible());
+        AudioManager.Instance.PlayBibleActivate();
     }
 
     private IEnumerator OrbitBible()

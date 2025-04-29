@@ -144,6 +144,7 @@ public class MainMenu : MonoBehaviour
 
         SceneManager.LoadScene("GameScene", LoadSceneMode.Additive);
         StartCoroutine(HandleSceneTransition());
+        AudioManager.Instance.PlaySceneLoaded();
     }
 
 

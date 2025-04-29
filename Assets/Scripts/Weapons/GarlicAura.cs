@@ -72,6 +72,7 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
                 {
                     Debug.Log("[GarlicAura] Hit enemy: " + hit.name);
                     target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMulti, false);
+                    AudioManager.Instance.PlayGarlicHit();
                 }
             }
 

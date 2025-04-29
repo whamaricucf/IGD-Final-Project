@@ -32,7 +32,7 @@ public class LoseScreen : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(true);
-
+        AudioManager.Instance.PlayGameLose();
         UpdateLoseScreenInfo();
     }
 
