@@ -45,15 +45,17 @@ public class WeaponUpgradeSO : UpgradeSO
             return;
         }
 
-        // Level 1 = unlock, do not apply bonuses yet
-        if (currentLevel <= 1)
+        // Only skip if there are no bonuses at all
+        if (upgradeLevels == null || upgradeLevels.Length == 0)
         {
-            Debug.Log($"WeaponUpgradeSO: Skipping applying upgrade effects for {upgradeName} at Level {currentLevel} (unlock only).");
+            Debug.LogWarning($"WeaponUpgradeSO: No upgrade levels defined for {upgradeName}.");
             return;
         }
 
-        // Apply based on (currentLevel - 2), not currentLevel - 1
-        var data = upgradeLevels[currentLevel - 2];
+
+        // Correct level lookup
+        int levelIndex = Mathf.Clamp(currentLevel - 1, 0, upgradeLevels.Length - 1);
+        var data = upgradeLevels[levelIndex];
 
         for (int i = 0; i < data.upgradeTypes.Length; i++)
         {
@@ -68,12 +70,7 @@ public class WeaponUpgradeSO : UpgradeSO
     }
 
 
-
-
-    public override int GetCurrentLevel()
-    {
-        return currentLevel;
-    }
+    public override int GetCurrentLevel() => currentLevel;
 
     public override bool IsMaxLevel()
     {

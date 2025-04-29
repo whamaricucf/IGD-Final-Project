@@ -18,7 +18,6 @@ public class KingBible : Weapon, IWeaponUpgradeable
         }
 
         RefreshWeaponStats(); // Refresh final stats
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
         StartOrbit(); // Start firing behavior
     }
 
@@ -90,7 +89,7 @@ public class KingBible : Weapon, IWeaponUpgradeable
             }
         }
 
-        activeBibles = new GameObject[Mathf.Max(1, amount + weaponAmountBonus)];
+        activeBibles = new GameObject[Mathf.Max(1, amount)];
 
         for (int i = 0; i < activeBibles.Length; i++)
         {
@@ -104,7 +103,7 @@ public class KingBible : Weapon, IWeaponUpgradeable
         }
     }
 
-    public void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
+    public override void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
     {
         switch (type)
         {
@@ -135,10 +134,15 @@ public class KingBible : Weapon, IWeaponUpgradeable
     public override void RefreshWeaponStats()
     {
         base.RefreshWeaponStats();
+        cooldown = Mathf.Clamp(baseCooldown * (1f - PlayerStats.Instance.cd), 0.2f, 10f);
+        duration = Mathf.Clamp(baseDuration * PlayerStats.Instance.duration, 0.5f, 10f);
+        speed = Mathf.Clamp(baseSpeed * PlayerStats.Instance.projSpd, 1f, 10f); // this controls spin speed
+        area = Mathf.Clamp(baseArea * PlayerStats.Instance.area, 0.5f, 5f);
+
     }
 
 
-    public void ReinitializeWeaponAfterUpgrade()
+    public override void ReinitializeWeaponAfterUpgrade()
     {
         if (orbitCoroutine != null)
             StopCoroutine(orbitCoroutine);
@@ -147,7 +151,7 @@ public class KingBible : Weapon, IWeaponUpgradeable
         StartOrbit();
     }
 
-    public string GetWeaponIdentifier()
+    public override string GetWeaponIdentifier()
     {
         return weaponType;
     }

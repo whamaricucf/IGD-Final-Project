@@ -35,12 +35,11 @@ public class WeaponDebugger : MonoBehaviour
                     {
                         if (upgrade != null && upgrade.upgradeName.Replace(" ", "") == weaponName)
                         {
-                            level = UpgradeManager.Instance.GetCurrentUpgradeLevel(upgrade);
+                            level = upgrade.GetCurrentLevel(); // 🔥 Fix: just call upgrade.GetCurrentLevel()
                             break;
                         }
                     }
                 }
-
 
                 Debug.Log($"Weapon: {weaponName} | Upgrade Level: {level}");
             }

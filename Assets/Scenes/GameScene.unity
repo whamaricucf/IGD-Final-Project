@@ -8441,7 +8441,7 @@ MonoBehaviour:
   - tag: MagicWandBullet
     prefab: {fileID: 8759501043329681090, guid: 7c45bdfb3a8196643b622ff30da14a3a,
       type: 3}
-    size: 3
+    size: 10
     allowGrowth: 1
   - tag: KingBible
     prefab: {fileID: 5376376589897682156, guid: 1b763d2ae59a71546b881d5f51bc6b29,
@@ -8450,8 +8450,8 @@ MonoBehaviour:
     allowGrowth: 1
   - tag: Gem
     prefab: {fileID: 483893790469409088, guid: cda55a5e2f892c64eacaed13850957b0, type: 3}
-    size: 50
-    allowGrowth: 1
+    size: 500
+    allowGrowth: 0
   - tag: SuperGem
     prefab: {fileID: 8931180165380815505, guid: 8afc126529af1c749a36088dd3ca7184,
       type: 3}
@@ -8461,26 +8461,26 @@ MonoBehaviour:
     prefab: {fileID: 1295564546527523462, guid: 4451e10817e130744bee1a2e5435d2f9,
       type: 3}
     size: 50
-    allowGrowth: 1
+    allowGrowth: 0
   - tag: Ghost
     prefab: {fileID: 3027930343321946135, guid: e4d3a16368f326f489fc7f5f860be0d9,
       type: 3}
     size: 25
-    allowGrowth: 1
+    allowGrowth: 0
   - tag: Spider
     prefab: {fileID: 3858701422774937663, guid: 854526831aa77034e90fad27e04145a5,
       type: 3}
     size: 15
-    allowGrowth: 1
+    allowGrowth: 0
   - tag: MiniGhost
     prefab: {fileID: 180765663557446053, guid: 098ce0748e83ea84d85439efdf7a2358, type: 3}
     size: 50
-    allowGrowth: 1
+    allowGrowth: 0
   - tag: SpiderWeb
     prefab: {fileID: 2490130215405677118, guid: d0392626e7599034ab6eb58e6a7fd21b,
       type: 3}
     size: 15
-    allowGrowth: 1
+    allowGrowth: 0
 --- !u!1001 &2275035433414477681
 PrefabInstance:
   m_ObjectHideFlags: 0

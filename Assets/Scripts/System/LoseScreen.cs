@@ -66,8 +66,7 @@ public class LoseScreen : MonoBehaviour
                 continue;
 
             // Instead of picked.level, fetch the current REAL upgrade level!
-            int realLevel = picked.levelWhenPicked;
-
+            int realLevel = picked.upgrade.GetCurrentLevel();
 
             string line = $"{picked.upgrade.upgradeName} - LV {realLevel}";
 
@@ -133,7 +132,7 @@ public class LoseScreen : MonoBehaviour
 
         GameManager.Instance?.ResetRunData();
         if (UpgradeManager.Instance != null)
-            UpgradeManager.Instance.ResetAllUpgrades();
+            UpgradeManager.Instance.FullResetAllUpgrades();
 
         MainMenu menu = FindObjectOfType<MainMenu>();
         if (menu != null)

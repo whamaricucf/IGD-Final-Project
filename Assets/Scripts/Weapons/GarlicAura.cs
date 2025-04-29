@@ -10,21 +10,25 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
 
     private void OnEnable()
     {
+        Debug.Log("[GarlicAura] OnEnable called");
+
         if (weaponData != null)
         {
-            weaponData = Instantiate(weaponData); // Fresh clone
-            ApplyWeaponData(); // Apply base stats
+            weaponData = Instantiate(weaponData);
+            ApplyWeaponData();
             weaponType = weaponData.wepName;
+            Debug.Log("[GarlicAura] WeaponData instantiated and applied");
+        }
+        else
+        {
+            Debug.LogWarning("[GarlicAura] No WeaponData assigned!");
         }
 
-        RefreshWeaponStats(); // Refresh final stats
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply upgrades
-        StartAura(); // Start aura damaging enemies
+        RefreshWeaponStats();
+        Debug.Log($"[GarlicAura] Stats after RefreshWeaponStats: Damage={damage}, Area={area}, Cooldown={cooldown}");
 
-        if (PlayerStats.Instance != null)
-            PlayerStats.Instance.OnStatsChanged += RefreshAuraVisual;
+        StartAura();
     }
-
 
     private void OnDisable()
     {
@@ -37,6 +41,8 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
 
     public void StartAura()
     {
+        Debug.Log("[GarlicAura] StartAura called");
+
         if (damageCoroutine != null)
             StopCoroutine(damageCoroutine);
 
@@ -45,17 +51,26 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
 
     private IEnumerator DamageEnemies()
     {
+        Debug.Log("[GarlicAura] DamageEnemies coroutine started");
+
+        if (enemyLayerMask == 0)
+        {
+            Debug.LogWarning("[GarlicAura] EnemyLayerMask is NOT set!");
+        }
+
         yield return new WaitForSeconds(0.5f);
 
         while (true)
         {
+            Debug.Log("[GarlicAura] Attempting to deal damage in radius " + area);
+
             Collider[] hits = Physics.OverlapSphere(transform.position, area, enemyLayerMask);
 
             foreach (var hit in hits)
             {
                 if (hit.TryGetComponent(out IDamageable target))
                 {
-                    // For Garlic: disableAgent = false
+                    Debug.Log("[GarlicAura] Hit enemy: " + hit.name);
                     target.TakeDamage(Mathf.RoundToInt(damage), knockback, transform.position, critChance, critMulti, false);
                 }
             }
@@ -64,7 +79,7 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
         }
     }
 
-    public void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
+    public override void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
     {
         switch (type)
         {
@@ -78,15 +93,14 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
                 baseCooldown = isPercentage ? baseCooldown * (1f - amount / 100f) : baseCooldown - amount;
                 break;
         }
+        Debug.Log("[GarlicAura] Weapon upgrade applied: " + type);
     }
 
     public override void RefreshWeaponStats()
     {
         base.RefreshWeaponStats();
-
-        UpdateAuraVisualScale(); // Still scale visual after upgrading area
+        UpdateAuraVisualScale();
     }
-
 
     private void UpdateAuraVisualScale()
     {
@@ -97,10 +111,11 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
         {
             float diameter = area * 2f;
             garlicVisual.localScale = new Vector3(diameter, 0.1f, diameter);
+            Debug.Log("[GarlicAura] GarlicVisual scale updated");
         }
         else
         {
-            Debug.LogWarning("GarlicAura: GarlicVisual not found!");
+            Debug.LogWarning("[GarlicAura] GarlicVisual child not found!");
         }
     }
 
@@ -109,7 +124,7 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
         RefreshWeaponStats();
     }
 
-    public void ReinitializeWeaponAfterUpgrade()
+    public override void ReinitializeWeaponAfterUpgrade()
     {
         if (damageCoroutine != null)
             StopCoroutine(damageCoroutine);
@@ -118,7 +133,7 @@ public class GarlicAura : Weapon, IWeaponUpgradeable
         StartAura();
     }
 
-    public string GetWeaponIdentifier()
+    public override string GetWeaponIdentifier()
     {
         return weaponType;
     }

@@ -91,20 +91,27 @@ public class MainMenu : MonoBehaviour
     public void ChooseCharA()
     {
         characterSelectionManager.SelectCharacter("A");
+        if (GameManager.Instance != null)
+            GameManager.Instance.selectedCharacter = GameManager.CharacterType.A;
         StartGame();
     }
 
     public void ChooseCharB()
     {
         characterSelectionManager.SelectCharacter("B");
+        if (GameManager.Instance != null)
+            GameManager.Instance.selectedCharacter = GameManager.CharacterType.B;
         StartGame();
     }
 
     public void ChooseCharC()
     {
         characterSelectionManager.SelectCharacter("C");
+        if (GameManager.Instance != null)
+            GameManager.Instance.selectedCharacter = GameManager.CharacterType.C;
         StartGame();
     }
+
 
     public void StartGame()
     {
@@ -259,4 +266,6 @@ public class MainMenu : MonoBehaviour
         Application.Quit();
         Debug.Log("Quitting game...");
     }
+
+
 }

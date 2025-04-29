@@ -11,24 +11,15 @@ public class MagicWand : Weapon, IWeaponUpgradeable
     {
         if (weaponData != null)
         {
-            weaponData = Instantiate(weaponData); // Fresh clone
-            ApplyWeaponData(); // Initialize base stats
+            weaponData = Instantiate(weaponData);
+            ApplyWeaponData();
+            weaponType = weaponData.wepName;
         }
 
-        // Assign firePoint = Player
-        if (firePoint == null)
-        {
-            GameObject player = GameObject.FindWithTag("Player");
-            if (player != null)
-                firePoint = player.transform;
-            else
-                Debug.LogWarning("[MagicWand] Player not found! FirePoint cannot be assigned.");
-        }
-
-        RefreshWeaponStats(); // Refresh live stats
-        UpgradeManager.Instance?.RefreshWeaponUpgradesOnWeapon(this); // Reapply any active upgrades
-        StartAttacking(); // Begin firing
+        RefreshWeaponStats();
+        StartAttacking();
     }
+
 
 
 
@@ -58,7 +49,7 @@ public class MagicWand : Weapon, IWeaponUpgradeable
             GameObject target = FindClosestEnemy();
             if (target != null)
             {
-                int totalProjectiles = Mathf.Max(1, amount + weaponAmountBonus);
+                int totalProjectiles = Mathf.Max(1, amount);
                 float maxArc = 3f; // Max arc spread in degrees
                 float arcStep = totalProjectiles > 1 ? maxArc / (totalProjectiles - 1) : 0f;
                 float startingAngle = -maxArc / 2f;
@@ -137,12 +128,12 @@ public class MagicWand : Weapon, IWeaponUpgradeable
         return closest;
     }
 
-    public void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
+    public override void ApplyWeaponUpgrade(WeaponUpgradeType type, float amount, bool isPercentage)
     {
         switch (type)
         {
             case WeaponUpgradeType.Amount:
-                weaponAmountBonus += Mathf.RoundToInt(isPercentage ? baseAmount * (amount / 100f) : amount);
+                weaponAmountBonus += Mathf.RoundToInt(amount);
                 break;
             case WeaponUpgradeType.Cooldown:
                 baseCooldown = isPercentage ? baseCooldown * (1f - amount / 100f) : baseCooldown - amount;
@@ -172,18 +163,20 @@ public class MagicWand : Weapon, IWeaponUpgradeable
         base.RefreshWeaponStats();
 
         // Reset cooldown before modifiers
-        cooldown = Mathf.Max(0.05f, baseCooldown);
+        cooldown = Mathf.Clamp(baseCooldown * (1f - PlayerStats.Instance.cd), 0.15f, 10f);
+        projInterval = Mathf.Clamp(baseProjInterval * (1f - PlayerStats.Instance.cd), 0.15f, 10f);
+        speed = Mathf.Min(baseSpeed * PlayerStats.Instance.projSpd, 20f); // or whatever your upper bound is
     }
 
 
 
-    public void ReinitializeWeaponAfterUpgrade()
+    public override void ReinitializeWeaponAfterUpgrade()
     {
         RefreshWeaponStats();
         StartAttacking();
     }
 
-    public string GetWeaponIdentifier()
+    public override string GetWeaponIdentifier()
     {
         return weaponType;
     }

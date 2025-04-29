@@ -1,8 +1,9 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Linq;
 
-public class Weapon : MonoBehaviour
+public class Weapon : MonoBehaviour, IWeaponUpgradeable
 {
     // Live runtime stats
     public float damage;
@@ -40,9 +41,9 @@ public class Weapon : MonoBehaviour
     protected int basePierce;
     protected int baseLimit;
 
-    protected int weaponAmountBonus = 0; // Used for weapon upgrades like "fires 1 more projectile"
+    protected int weaponAmountBonus = 0;
 
-    // --- 🔥 NEW: Add public getters ---
+    // Public Getters
     public float BaseDamage => baseDamage;
     public float BaseSpeed => baseSpeed;
     public float BaseArea => baseArea;
@@ -60,15 +61,14 @@ public class Weapon : MonoBehaviour
     public int WeaponAmountBonus
     {
         get => weaponAmountBonus;
-        set => weaponAmountBonus = value; // Allow controlled setting
+        set => weaponAmountBonus = value;
     }
-    // --- 🔥 ---
 
     protected virtual void Start()
     {
         if (weaponData != null)
         {
-            weaponData = Instantiate(weaponData); // Clone it
+            weaponData = Instantiate(weaponData);
             ApplyWeaponData();
             weaponType = weaponData.wepName;
         }
@@ -91,10 +91,27 @@ public class Weapon : MonoBehaviour
         baseAmount = weaponData.amount;
         basePierce = weaponData.pierce;
         baseLimit = weaponData.limit;
-
         wallBlock = weaponData.wallBlock;
 
-        RefreshWeaponStats();
+        ResetToBaseStats();
+    }
+
+    // 🧹 NEW METHOD — Safely reset weapon to pure base stats
+    public virtual void ResetToBaseStats()
+    {
+        weaponAmountBonus = 0;
+
+        damage = baseDamage;
+        area = baseArea;
+        cooldown = baseCooldown;
+        projInterval = baseProjInterval;
+        speed = baseSpeed;
+        duration = baseDuration;
+        knockback = baseKnockback;
+        critChance = baseCritChance;
+        critMulti = baseCritMulti;
+        amount = baseAmount;
+        pierce = basePierce;
     }
 
     public virtual void RefreshWeaponStats()
@@ -111,8 +128,97 @@ public class Weapon : MonoBehaviour
         critChance = baseCritChance + (PlayerStats.Instance.luck * 0.01f);
 
         knockback = baseKnockback;
-
         amount = baseAmount + weaponAmountBonus + PlayerStats.Instance.amount;
         pierce = basePierce;
     }
+
+    public virtual string GetWeaponIdentifier()
+    {
+        return weaponType.Replace(" ", "");
+    }
+
+    public virtual void ApplyWeaponUpgrade(UpgradeTypes.WeaponUpgradeType type, float amount, bool isPercentage)
+    {
+        switch (type)
+        {
+            case UpgradeTypes.WeaponUpgradeType.Amount:
+                WeaponAmountBonus += Mathf.RoundToInt(amount);
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Cooldown:
+                if (isPercentage)
+                    baseCooldown *= (1f - amount / 100f);
+                else
+                    baseCooldown -= amount;
+                baseCooldown = Mathf.Max(0.05f, baseCooldown);
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Area:
+                baseArea = isPercentage ? baseArea * (1f + amount / 100f) : baseArea + amount;
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Damage:
+                baseDamage = isPercentage ? baseDamage * (1f + amount / 100f) : baseDamage + amount;
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Speed:
+                baseSpeed = isPercentage ? baseSpeed * (1f + amount / 100f) : baseSpeed + amount;
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Duration:
+                baseDuration = isPercentage ? baseDuration * (1f + amount / 100f) : baseDuration + amount;
+                break;
+            case UpgradeTypes.WeaponUpgradeType.Pierce:
+                basePierce = Mathf.Max(0, basePierce + Mathf.RoundToInt(amount));
+                break;
+        }
+
+        RefreshWeaponStats();
+    }
+    public virtual void InitializeWeaponDataIfNeeded()
+    {
+        if (weaponData != null)
+        {
+            weaponData = Instantiate(weaponData);
+            ApplyWeaponData();
+        }
+    }
+
+    public virtual void ReinitializeWeaponAfterUpgrade()
+    {
+        if (this is MagicWand wand)
+        {
+            wand.RefreshWeaponStats();
+            wand.ApplyAllActiveUpgrades();
+            wand.StartAttacking();
+        }
+        else if (this is KingBible bible)
+        {
+            bible.RefreshWeaponStats();
+            bible.ApplyAllActiveUpgrades();
+            bible.StartOrbit();
+        }
+        else if (this is GarlicAura garlic)
+        {
+            garlic.RefreshWeaponStats();
+            garlic.ApplyAllActiveUpgrades();
+            garlic.StartAura();
+        }
+    }
+    public void ApplyAllActiveUpgrades()
+    {
+        foreach (var upgrade in UpgradeManager.Instance.GetPickedUpgrades())
+        {
+            if (upgrade.upgrade is WeaponUpgradeSO weaponUpgrade)
+            {
+                if (weaponUpgrade.compatibleWeaponTags.Any(tag => tag.Replace(" ", "") == GetWeaponIdentifier()))
+                {
+                    if (weaponUpgrade.GetCurrentLevel() > 0)
+                    {
+                        weaponUpgrade.ApplyUpgrade(this as IWeaponUpgradeable);
+                    }
+                }
+            }
+            else if (upgrade.upgrade is PassiveUpgradeSO passiveUpgrade)
+            {
+                passiveUpgrade.ApplyUpgrade(this as IWeaponUpgradeable);
+            }
+        }
+    }
+
 }

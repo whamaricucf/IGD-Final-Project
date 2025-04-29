@@ -27,6 +27,9 @@ public class GameManager : MonoBehaviour
     private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
     private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
+    public enum CharacterType { A, B, C }
+    public CharacterType selectedCharacter;
+
     private void Awake()
     {
         if (Instance == null)
@@ -91,7 +94,21 @@ public class GameManager : MonoBehaviour
             PlayerData stats = characterDatabase.GetCharacterData(selectedCharacterID);
 
             PlayerStats.Instance.InitializeStats(stats);
-
+            switch (selectedCharacterID)
+            {
+                case "A":
+                    selectedCharacter = CharacterType.A;
+                    break;
+                case "B":
+                    selectedCharacter = CharacterType.B;
+                    break;
+                case "C":
+                    selectedCharacter = CharacterType.C;
+                    break;
+                default:
+                    selectedCharacter = CharacterType.A;
+                    break;
+            }
             EquipStartingWeapon();
 
             PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
@@ -294,7 +311,7 @@ public class GameManager : MonoBehaviour
             PlayerStats.Instance.ResetStats();
 
         if (UpgradeManager.Instance != null)
-            UpgradeManager.Instance.ResetAllUpgrades();
+            UpgradeManager.Instance.FullResetAllUpgrades();
 
         // Show Lose screen (before unloading scene)
         if (LoseScreen.Instance != null)
@@ -362,8 +379,6 @@ public class GameManager : MonoBehaviour
 
     public void EquipStartingWeapon()
     {
-        string selectedCharacterID = PlayerPrefs.GetString("SelectedCharacter", "A");
-
         GameObject player = GameObject.FindWithTag("Player");
         if (player == null)
         {
@@ -379,25 +394,22 @@ public class GameManager : MonoBehaviour
         if (kingBible != null) kingBible.gameObject.SetActive(false);
         if (garlicAura != null) garlicAura.gameObject.SetActive(false);
 
-        switch (selectedCharacterID)
+        switch (selectedCharacter)
         {
-            case "A":
+            case CharacterType.A:
                 if (magicWand != null) magicWand.gameObject.SetActive(true);
                 break;
-            case "B":
+            case CharacterType.B:
                 if (kingBible != null) kingBible.gameObject.SetActive(true);
                 break;
-            case "C":
+            case CharacterType.C:
                 if (garlicAura != null) garlicAura.gameObject.SetActive(true);
                 break;
             default:
-                Debug.LogWarning($"Unknown character ID {selectedCharacterID}. Defaulting to Magic Wand.");
+                Debug.LogWarning($"Unknown character type {selectedCharacter}. Defaulting to Magic Wand.");
                 if (magicWand != null) magicWand.gameObject.SetActive(true);
                 break;
         }
-
-        // AFTER setting the active weapon, refresh upgrades manually
-        UpgradeManager.Instance?.InitializeStartingWeaponLevels();
     }
 
 }

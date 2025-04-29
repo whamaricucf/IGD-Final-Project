@@ -135,7 +135,7 @@ public class PlayerStats : MonoBehaviour
                 break;
             case StatType.Cooldown:
                 baseCooldownReduction += isPercentage ? (amount / 100f) : amount;
-                cd = Mathf.Clamp(baseCooldownReduction, 0f, 0.95f);
+                cd = Mathf.Clamp(1f - baseCooldownReduction, 0f, 0.95f);
                 cdLevel++;
                 break;
             case StatType.Armor:
